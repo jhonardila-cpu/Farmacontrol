@@ -8,104 +8,144 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
-  --v:#800020; --vl:#a00030; --w:#fff;
-  --shadow:0 8px 24px rgba(0,0,0,.18);
-  --r:10px;
+  /* Marca — acento, no fondo */
+  --brand:#7a1230; --brand-l:#9a1a3d; --brand-dark:#5c0d24;
+  /* Superficie neutra — deja respirar el contenido */
+  --bg:#eef0f3; --surface:#ffffff; --surface-2:#f7f8fa;
+  --ink:#1c2024; --ink-soft:#5b6470; --ink-mute:#94a0ac;
+  --line:#e4e7eb;
+  /* Semántica */
+  --ok:#16803c; --ok-bg:#eafbf1; --ok-line:#bce8cd;
+  --warn:#b45300; --warn-bg:#fff6e8; --warn-line:#f3d69b;
+  --err:#c0362c; --err-bg:#fdecea; --err-line:#f3bdb8;
+  --info:#1d4fa8; --info-bg:#eef3fd; --info-line:#c3d6f5;
+  --shadow:0 1px 2px rgba(20,20,30,.04), 0 8px 24px rgba(20,20,30,.08);
+  --shadow-sm:0 1px 2px rgba(20,20,30,.06);
+  --r:12px; --r-sm:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:Arial,sans-serif;background:linear-gradient(160deg,#800020,#a00030);min-height:100vh;color:#222;font-size:15px;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  background:var(--bg);min-height:100vh;color:var(--ink);font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
 
 /* ─── LOGIN ─── */
-.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999;}
-.login-card{background:#fff;border-radius:var(--r);padding:24px;width:340px;max-width:94vw;box-shadow:var(--shadow);text-align:center;}
-.login-logo{width:90px;height:90px;margin:0 auto 12px;border-radius:12px;overflow:hidden;background:#f5f5f5;display:flex;align-items:center;justify-content:center;}
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--brand-dark),var(--brand));z-index:9999;}
+.login-card{background:var(--surface);border-radius:var(--r);padding:28px 24px;width:340px;max-width:94vw;box-shadow:var(--shadow);text-align:center;}
+.login-logo{width:88px;height:88px;margin:0 auto 14px;border-radius:14px;overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;}
 .login-logo img{width:100%;height:100%;object-fit:cover;}
-.lc-title{font-size:17px;font-weight:800;color:var(--v);margin-bottom:4px;}
-.lc-sub{font-size:12px;color:#888;margin-bottom:14px;}
-.lc-form{display:flex;flex-direction:column;gap:8px;}
-.lc-form input{padding:11px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:15px;outline:none;transition:.2s;}
-.lc-form input:focus{border-color:var(--v);}
+.lc-title{font-size:19px;font-weight:800;color:var(--ink);margin-bottom:4px;letter-spacing:-.01em;}
+.lc-sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:18px;}
+.lc-form{display:flex;flex-direction:column;gap:9px;}
+.lc-form input{padding:12px 13px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:15px;outline:none;transition:.15s;background:var(--surface-2);}
+.lc-form input:focus{border-color:var(--brand);background:var(--surface);}
 
 /* ─── TOPBAR ─── */
-.topbar{display:flex;align-items:center;gap:4px;padding:8px 12px;background:rgba(0,0,0,.18);position:sticky;top:0;z-index:50;backdrop-filter:blur(6px);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.topbar{display:flex;align-items:center;gap:2px;padding:0 12px;height:54px;background:var(--brand);position:sticky;top:0;z-index:50;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,.12);}
 .topbar::-webkit-scrollbar{height:0;}
-.tb-brand{font-weight:800;color:#fff;font-size:14px;white-space:nowrap;margin-right:4px;flex-shrink:0;}
-.nb{padding:9px 11px;border-radius:8px;border:none;background:transparent;color:#fff;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:38px;}
-.nb.on{background:rgba(255,255,255,.18);}
+.tb-brand{font-weight:800;color:#fff;font-size:14.5px;white-space:nowrap;margin-right:8px;flex-shrink:0;letter-spacing:-.01em;}
+.nb{padding:8px 12px;border-radius:var(--r-sm);border:none;background:transparent;color:rgba(255,255,255,.75);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:36px;transition:.15s;}
+.nb.on{background:rgba(255,255,255,.16);color:#fff;}
+.nb:hover:not(.on){background:rgba(255,255,255,.08);}
 .tb-space{flex:1;}
 .conn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0;}
-.dot{width:8px;height:8px;border-radius:50%;background:#aaa;flex-shrink:0;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ink-mute);flex-shrink:0;}
 .dot.on{background:#3ddc84;}
 .dot.off{background:#ff6b6b;}
 
 /* ─── WRAPPER ─── */
-.wrap{width:96%;max-width:1200px;margin:14px auto;background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--shadow);}
-h1{font-size:18px;color:var(--v);margin-bottom:12px;}
-h2{font-size:16px;color:var(--v);margin:0 0 10px 0;}
-h3{font-size:14px;color:var(--v);margin:0 0 8px 0;}
-p.sub{font-size:12px;color:#888;margin-bottom:10px;}
+.wrap{width:96%;max-width:1200px;margin:18px auto;padding:0;}
+h1{font-size:19px;color:var(--ink);margin-bottom:14px;font-weight:800;letter-spacing:-.01em;}
+h2{font-size:15px;color:var(--ink);margin:0 0 10px 0;font-weight:700;}
+h3{font-size:13.5px;color:var(--ink);margin:0 0 8px 0;font-weight:700;}
+p.sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:10px;}
 
-/* ─── BOTONES ─── */
-.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;background:var(--v);color:#fff;font-weight:700;font-size:14px;min-height:40px;transition:.15s;}
-.btn:active{opacity:.8;}
-.btn.g{background:#1a7a1a;}
-.btn.b{background:#1a4fa0;}
-.btn.gr{background:#666;}
-.btn.sm{padding:6px 10px;font-size:12px;min-height:32px;}
+/* ─── BOTONES — jerarquía clara ─── */
+.btn{padding:10px 16px;border-radius:var(--r-sm);border:none;cursor:pointer;font-weight:700;font-size:14px;min-height:42px;transition:.15s;background:var(--surface-2);color:var(--ink-soft);}
+.btn:active{transform:scale(.98);}
+/* Primario — una sola acción destacada por pantalla */
+.btn.prim,.btn.g{background:var(--ok);color:#fff;box-shadow:var(--shadow-sm);}
+.btn.prim:hover,.btn.g:hover{background:#116631;}
+.btn.b{background:var(--brand);color:#fff;box-shadow:var(--shadow-sm);}
+.btn.b:hover{background:var(--brand-dark);}
+/* Secundario — outline, no compite con el primario */
+.btn.sec{background:transparent;color:var(--ink-soft);border:1.5px solid var(--line);}
+.btn.sec:hover{background:var(--surface-2);}
+/* Terciario / destructivo discreto */
+.btn.gr{background:transparent;color:var(--ink-mute);border:1.5px solid var(--line);}
+.btn.gr:hover{background:var(--surface-2);color:var(--err);border-color:var(--err-line);}
+.btn.sm{padding:7px 11px;font-size:12px;min-height:32px;}
 
-/* ─── PANEL ─── */
-.panel{background:#fff;border-radius:var(--r);padding:12px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:12px;}
+/* ─── PANEL / TARJETA ─── */
+.panel{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm);border:1px solid var(--line);margin-bottom:12px;}
 
 /* ─── FORMS ─── */
 .fi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
 input[type=text],input[type=number],input[type=password],select{
-  padding:9px 10px;border-radius:7px;border:1.5px solid #ddd;font-size:14px;outline:none;transition:.2s;min-height:40px;
+  padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:14px;outline:none;transition:.15s;min-height:42px;background:var(--surface);color:var(--ink);
 }
-input:focus,select:focus{border-color:var(--v);}
+input:focus,select:focus{border-color:var(--brand);}
 
 /* ─── TABLA ─── */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
-th,td{padding:8px 6px;text-align:center;border-bottom:1px solid #f0f0f0;}
-th{background:var(--v);color:#fff;font-size:12px;}
-tr:hover td{background:#fdf5f7;}
-.low td{background:#fff8f0!important;}
+th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line);}
+th{background:var(--surface-2);color:var(--ink-soft);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+tr:hover td{background:var(--surface-2);}
+.low td{background:var(--warn-bg)!important;}
+
+/* ─── ESTADO VACÍO ─── */
+.empty-state{text-align:center;padding:36px 16px;color:var(--ink-mute);}
+.empty-state .ico{font-size:34px;margin-bottom:10px;opacity:.6;}
+.empty-state .msg{font-size:14px;font-weight:600;color:var(--ink-soft);margin-bottom:4px;}
+.empty-state .sub{font-size:12.5px;}
 
 /* ─── SCAN ─── */
-.scan-box{
-  border:2px dashed #ddd;border-radius:10px;padding:14px;text-align:center;
-  transition:.3s;cursor:pointer;
-}
-.scan-box.active{border-color:#1a7a1a;background:#f0fff4;}
+.scan-box{border:2px dashed var(--line);border-radius:var(--r);padding:14px;text-align:center;transition:.3s;cursor:pointer;}
+.scan-box.active{border-color:var(--ok);background:var(--ok-bg);}
 #campoScan{
-  width:100%;padding:14px;font-size:18px;border-radius:8px;
-  border:2px solid #1a7a1a;background:#f0fff4;color:#111;
+  width:100%;padding:14px;font-size:18px;border-radius:var(--r-sm);
+  border:2px solid var(--ok);background:var(--ok-bg);color:var(--ink);
   font-weight:700;letter-spacing:2px;text-align:center;min-height:52px;
 }
-.scan-ok{background:#f0fff4;border:2px solid #1a7a1a;border-radius:8px;padding:10px 12px;color:#1a5c1a;font-weight:700;}
-.scan-nf{background:#fff8f0;border:2px solid #e08000;border-radius:8px;padding:10px 12px;color:#7a4000;font-weight:700;}
+.scan-ok{background:var(--ok-bg);border:1.5px solid var(--ok-line);border-radius:var(--r-sm);padding:10px 12px;color:var(--ok);font-weight:700;}
+.scan-nf{background:var(--warn-bg);border:1.5px solid var(--warn-line);border-radius:var(--r-sm);padding:10px 12px;color:var(--warn);font-weight:700;}
 .scan-form{display:flex;flex-direction:column;gap:8px;}
-.scan-form label{font-size:12px;font-weight:700;color:var(--v);}
+.scan-form label{font-size:12px;font-weight:700;color:var(--ink-soft);}
 .scan-form input{font-size:15px;min-height:44px;}
-.hist-item{padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;}
+.hist-item{padding:7px 0;border-bottom:1px solid var(--line);font-size:12px;}
 
 /* ─── VENTA ─── */
-.cart-item{display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid #f5f5f5;font-size:13px;}
-.total-row{display:flex;justify-content:space-between;font-weight:800;font-size:15px;padding:10px 4px;}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px;}
+.total-row{display:flex;justify-content:space-between;font-weight:800;font-size:16px;padding:12px 4px 6px;color:var(--ink);}
 
 /* ─── RESUMEN ─── */
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;}
-.stat{background:linear-gradient(135deg,#fdf5f7,#fff);border-radius:8px;padding:12px;border-left:4px solid var(--v);}
-.stat .lbl{font-size:11px;color:#888;margin-bottom:4px;}
-.stat .val{font-size:20px;font-weight:800;color:var(--v);}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+.stat{background:var(--surface);border-radius:var(--r-sm);padding:14px;border:1px solid var(--line);border-left:3px solid var(--brand);}
+.stat .lbl{font-size:11px;color:var(--ink-mute);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+.stat .val{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.01em;}
 
-/* ─── TOAST ─── */
+/* ─── GRÁFICO VENTAS 7 DÍAS ─── */
+.chart-box{padding:6px 4px 0;}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:6px;}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+.chart-bar{width:100%;max-width:34px;background:var(--brand);border-radius:4px 4px 0 0;transition:.3s;min-height:3px;}
+.chart-bar.today{background:var(--ok);}
+.chart-lbl{font-size:10px;color:var(--ink-mute);margin-top:6px;font-weight:600;text-transform:uppercase;}
+.chart-val{font-size:10px;color:var(--ink-soft);font-weight:700;margin-bottom:3px;}
+
+/* ─── TOAST — diferenciado por tipo ─── */
 #toast{
   position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:#111;color:#fff;padding:11px 22px;border-radius:10px;
-  font-weight:700;font-size:13px;z-index:9999;opacity:0;
-  transition:opacity .3s;pointer-events:none;white-space:nowrap;
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:var(--r-sm);
+  font-weight:600;font-size:13px;z-index:9999;opacity:0;
+  transition:opacity .25s,transform .25s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
 }
+#toast.ok{background:var(--ok);}
+#toast.err{background:var(--err);}
+#toast.warn{background:var(--warn);}
 
 /* ─── PULSE ─── */
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
@@ -113,13 +153,13 @@ tr:hover td{background:#fdf5f7;}
 
 /* ─── RESPONSIVE Zebra MC9300 (~480px) ─── */
 @media(max-width:540px){
-  .wrap{width:100%;margin:0;border-radius:0;padding:10px;box-shadow:none;}
-  h1{font-size:15px;}
+  .wrap{width:100%;margin:0;padding:10px;}
+  h1{font-size:16px;}
   .tb-brand span{display:none;}
   .conn span:last-child{display:none;}
   .fi{flex-direction:column;align-items:stretch;}
   .fi>input,.fi>select,.fi>button{width:100%;}
-  th,td{padding:6px 3px;font-size:11px;}
+  th,td{padding:7px 4px;font-size:11px;}
   .stat-grid{grid-template-columns:1fr 1fr;}
   .btn{min-height:44px;font-size:14px;}
   input[type=text],input[type=number],input[type=password],select{min-height:44px;font-size:15px;}
@@ -140,8 +180,8 @@ tr:hover td{background:#fdf5f7;}
     <div class="lc-form">
       <input id="lUser" type="text" placeholder="Usuario" autocomplete="username"/>
       <input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
-      <button class="btn" id="btnLogin">Ingresar</button>
-      <div id="lErr" style="color:#c00;font-size:12px;display:none;">Usuario o contraseña incorrectos</div>
+      <button class="btn b" id="btnLogin">Ingresar</button>
+      <div id="lErr" style="color:var(--err);font-size:12.5px;display:none;font-weight:600;">Usuario o contraseña incorrectos</div>
     </div>
   </div>
 </div>
@@ -170,7 +210,7 @@ tr:hover td{background:#fdf5f7;}
         <input id="invCant" type="number" min="0" value="1" placeholder="Cant." style="width:80px;"/>
         <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio" style="width:110px;"/>
         <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
-        <button class="btn" id="btnAddInv">➕ Agregar</button>
+        <button class="btn b" id="btnAddInv">➕ Agregar</button>
       </div>
       <div class="fi" style="margin-bottom:8px;">
         <input id="fNom" type="text" placeholder="🔍 Buscar..." style="flex:1;min-width:120px;"/>
@@ -185,7 +225,7 @@ tr:hover td{background:#fdf5f7;}
       </div>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn b sm" id="btnExportCSV">⬇ CSV</button>
-        <button class="btn gr sm" id="btnLimpiarInv" style="background:#c00;">🗑 Limpiar inventario</button>
+        <button class="btn gr sm" id="btnLimpiarInv" style="background:var(--err);color:#fff;">🗑 Limpiar inventario</button>
       </div>
     </div>
   </section>
@@ -201,19 +241,19 @@ tr:hover td{background:#fdf5f7;}
           <button class="btn g" id="btnVentaScanOn">🔫 Activar escáner</button>
           <button class="btn gr" id="btnVentaScanOff" style="display:none;">🔴 Desactivar escáner</button>
         </div>
-        <div id="ventaScanStatus" style="display:none;background:#eaffea;border:2px solid #1a7a1a;border-radius:8px;padding:10px;margin-bottom:10px;align-items:center;gap:8px;">
+        <div id="ventaScanStatus" style="display:none;background:var(--ok-bg);border:1.5px solid var(--ok-line);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;align-items:center;gap:8px;">
           <div class="dot on pulse"></div>
-          <div style="font-size:12px;font-weight:700;color:#1a5c1a;">Escáner activo — dispara sobre el producto, se agrega solo al carrito</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ok);">Escáner activo — dispara sobre el producto, se agrega solo al carrito</div>
         </div>
         <input id="campoScanVenta" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
           placeholder="Toca aquí y dispara el gatillo..." readonly
-          style="display:none;width:100%;font-size:16px;padding:12px;border:2px solid #1a7a1a;background:#f0fff4;border-radius:8px;letter-spacing:1px;font-weight:700;min-height:48px;margin-bottom:10px;"/>
+          style="display:none;width:100%;font-size:16px;padding:12px;border:2px solid var(--ok);background:var(--ok-bg);border-radius:var(--r-sm);letter-spacing:1px;font-weight:700;min-height:48px;margin-bottom:10px;color:var(--ink);"/>
 
         <div class="fi" style="flex-direction:column;align-items:stretch;">
           <select id="selProd" style="width:100%;"></select>
           <div style="display:flex;gap:8px;">
             <input id="ventaCant" type="number" min="1" value="1" style="width:80px;"/>
-            <button class="btn" id="btnAddCart" style="flex:1;">➕ Agregar</button>
+            <button class="btn b" id="btnAddCart" style="flex:1;">➕ Agregar</button>
           </div>
         </div>
         <div id="cart"></div>
@@ -236,11 +276,11 @@ tr:hover td{background:#fdf5f7;}
     <div class="panel">
 
       <!-- Estado activo -->
-      <div id="scanStatus" style="display:none;background:#eaffea;border:2px solid #1a7a1a;border-radius:8px;padding:12px;margin-bottom:12px;display:none;align-items:center;gap:10px;">
+      <div id="scanStatus" style="display:none;background:var(--ok-bg);border:1.5px solid var(--ok-line);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;align-items:center;gap:10px;">
         <div class="dot on pulse"></div>
         <div>
-          <div style="font-weight:800;color:#1a5c1a;font-size:14px;">Escáner activo — dispara el gatillo</div>
-          <div style="font-size:11px;color:#2a8f2a;">El código aparece automáticamente abajo</div>
+          <div style="font-weight:800;color:var(--ok);font-size:14px;">Escáner activo — dispara el gatillo</div>
+          <div style="font-size:11px;color:var(--ok);">El código aparece automáticamente abajo</div>
         </div>
       </div>
 
@@ -252,15 +292,15 @@ tr:hover td{background:#fdf5f7;}
 
       <!-- Campo que recibe el input del láser -->
       <div id="scanField" style="display:none;margin-bottom:12px;">
-        <label style="font-size:12px;font-weight:700;color:var(--v);display:block;margin-bottom:6px;">
+        <label style="font-size:12px;font-weight:700;color:var(--brand);display:block;margin-bottom:6px;">
           📍 Campo activo — toca aquí si el teclado no aparece, luego dispara:
         </label>
         <div style="display:flex;gap:8px;">
           <input id="campoScan" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Código aquí..." readonly
-            style="flex:1;font-size:18px;padding:12px;border:2px solid #1a7a1a;background:#f0fff4;border-radius:8px;letter-spacing:2px;font-weight:700;min-height:52px;cursor:pointer;"/>
+            style="flex:1;font-size:18px;padding:12px;border:2px solid var(--ok);background:var(--ok-bg);border-radius:var(--r-sm);letter-spacing:2px;font-weight:700;min-height:52px;cursor:pointer;color:var(--ink);"/>
           <button class="btn b" id="btnBuscarManual" style="min-width:80px;">🔍 Buscar</button>
         </div>
-        <div style="font-size:11px;color:#888;margin-top:4px;">
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:4px;">
           También puedes escribir el código a mano y tocar Buscar.
         </div>
       </div>
@@ -270,7 +310,7 @@ tr:hover td{background:#fdf5f7;}
 
       <!-- Formulario producto existente -->
       <div id="scanExiste" class="panel" style="display:none;">
-        <h3 style="color:#1a5c1a;">✅ Producto encontrado</h3>
+        <h3 style="color:var(--ok);">✅ Producto encontrado</h3>
         <div id="scanExisteInfo" style="margin-bottom:10px;font-size:14px;"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
           <div>
@@ -287,11 +327,11 @@ tr:hover td{background:#fdf5f7;}
 
       <!-- Formulario producto nuevo -->
       <div id="scanNuevo" class="panel" style="display:none;">
-        <h3 style="color:#a35000;">🆕 Producto nuevo — registrar</h3>
+        <h3 style="color:var(--warn);">🆕 Producto nuevo — registrar</h3>
         <div class="scan-form">
           <label>Código:</label>
           <input id="scanNuevoCod" type="text" readonly style="background:#f5f5f5;"/>
-          <label>Nombre: <span style="color:#c00">*</span></label>
+          <label>Nombre: <span style="color:var(--err)">*</span></label>
           <input id="scanNuevoNom" type="text" placeholder="Ej: Paracetamol 500mg x10"/>
           <label>Cantidad inicial:</label>
           <input id="scanNuevoCant" type="number" min="1" value="1"/>
@@ -305,10 +345,10 @@ tr:hover td{background:#fdf5f7;}
       <div class="panel">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <h3 style="margin:0;">📋 Escaneos de esta sesión</h3>
-          <span id="scanCount" style="font-size:11px;color:#888;">0 escaneos</span>
+          <span id="scanCount" style="font-size:11px;color:var(--ink-mute);">0 escaneos</span>
         </div>
         <div id="scanHist" style="max-height:200px;overflow-y:auto;">
-          <span style="color:#aaa;font-size:12px;">Sin escaneos aún.</span>
+          <span style="color:var(--ink-mute);font-size:12px;">Sin escaneos aún.</span>
         </div>
       </div>
     </div>
@@ -512,9 +552,16 @@ function uid() {
 }
 
 let _toastTimer;
-function toast(msg) {
+function toast(msg, tipo) {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.style.opacity = '1';
+  if (!tipo) {
+    if (msg.startsWith('✅')) tipo = 'ok';
+    else if (msg.startsWith('⚠')) tipo = 'warn';
+    else if (msg.startsWith('❌') || msg.startsWith('🔴')) tipo = 'err';
+  }
+  el.textContent = msg;
+  el.className = tipo || '';
+  el.style.opacity = '1';
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3500);
 }
@@ -533,7 +580,25 @@ function renderInv() {
 
   const tb = document.getElementById('tbInv');
   if (!lista.length) {
-    tb.innerHTML = '<tr><td colspan="6" style="color:#aaa;padding:16px;">Sin productos</td></tr>';
+    if (!db.inventario.length) {
+      // Inventario totalmente vacío — onboarding
+      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
+        <div class="empty-state">
+          <div class="ico">📦</div>
+          <div class="msg">Aún no tienes productos</div>
+          <div class="sub">Escanea el primer código con la Zebra en "📷 Escanear", o agrégalo manualmente arriba ↑</div>
+        </div>
+      </td></tr>`;
+    } else {
+      // Hay inventario, pero el filtro no encontró nada
+      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
+        <div class="empty-state">
+          <div class="ico">🔍</div>
+          <div class="msg">Sin resultados para ese filtro</div>
+          <div class="sub">Prueba con otro nombre o baja el stock mínimo</div>
+        </div>
+      </td></tr>`;
+    }
     return;
   }
 
@@ -541,19 +606,19 @@ function renderInv() {
     <tr class="${item.cantidad <= 3 ? 'low' : ''}">
       <td>${idx+1}</td>
       <td style="text-align:left;font-weight:600;">${item.nombre}</td>
-      <td style="font-size:11px;color:#888;">${item.codigo || '—'}</td>
+      <td style="font-size:11px;color:var(--ink-mute);">${item.codigo || '—'}</td>
       <td>
         <input type="number" min="0" value="${item.cantidad}" data-id="${item.id}" data-field="cantidad"
-          style="width:60px;text-align:center;padding:4px;border-radius:5px;border:1px solid #ddd;font-size:13px;"
+          style="width:60px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
           onchange="editItem(this)"/>
       </td>
       <td>
         <input type="number" min="0" step="0.01" value="${item.precio}" data-id="${item.id}" data-field="precio"
-          style="width:80px;text-align:center;padding:4px;border-radius:5px;border:1px solid #ddd;font-size:13px;"
+          style="width:80px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
           onchange="editItem(this)"/>
       </td>
       <td>
-        <button class="btn sm" style="background:#c00;" onclick="delItem('${item.id}')">🗑</button>
+        <button class="btn sm gr" onclick="delItem('${item.id}')">🗑</button>
       </td>
     </tr>`).join('');
 }
@@ -609,10 +674,12 @@ document.getElementById('btnFiltroOff').onclick = () => {
 };
 
 document.getElementById('btnLimpiarInv').onclick = () => {
-  if (!confirm('¿Eliminar TODO el inventario?')) return;
+  if (!confirm('¿Eliminar TODO el inventario? Esta acción no se puede deshacer.')) return;
+  const ids = db.inventario.map(i => i.id);
+  ids.forEach(id => wsSend({ t: 'inv_delete', id }));
   db.inventario = [];
-  wsSend({ t: 'sync_datos', datos: db });
   renderAll();
+  toast('🗑 Inventario eliminado', 'warn');
 };
 
 document.getElementById('btnExportCSV').onclick = () => {
@@ -646,7 +713,7 @@ function renderCart() {
     <div class="cart-item">
       <span style="flex:1;text-align:left;">${ci.nombre}</span>
       <span style="margin:0 8px;">${ci.cant} × ${money(ci.precio)}</span>
-      <button class="btn sm" style="background:#c00;" onclick="quitarCart(${idx})">✕</button>
+      <button class="btn sm" style="background:var(--err);color:#fff;" onclick="quitarCart(${idx})">✕</button>
     </div>`).join('');
   const tot = carrito.reduce((s, ci) => s + ci.cant * ci.precio, 0);
   document.getElementById('totalVenta').textContent = money(tot);
@@ -777,20 +844,71 @@ document.getElementById('btnVender').onclick = () => {
   carrito = [];
   renderAll();
   toast(`✅ Venta #${venta.factura} — ${money(total)}`);
+  generarReciboPDF(venta);
 };
+
+// ════════════════════════════════════════════════════════
+//  RECIBO PDF — comprobante de venta (no es factura electrónica DIAN)
+// ════════════════════════════════════════════════════════
+function generarReciboPDF(venta) {
+  try {
+    if (!window.jspdf) { toast('⚠ No se pudo cargar el generador de recibos', 'warn'); return; }
+    const { jsPDF } = window.jspdf;
+    const nombreNeg = (document.getElementById('tbBrand') || {}).textContent || 'FarmaControl';
+    const alto = 48 + venta.items.length * 9 + 22;
+    const doc = new jsPDF({ unit: 'mm', format: [80, alto] });
+    const cx = 40;
+    let y = 8;
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text(nombreNeg, cx, y, { align: 'center' }); y += 5;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+    doc.text('Comprobante de venta', cx, y, { align: 'center' }); y += 3.5;
+    doc.text('(no válido como factura electrónica DIAN)', cx, y, { align: 'center' }); y += 5;
+
+    doc.setFontSize(8);
+    doc.text(`Factura interna #${venta.factura}`, 5, y); y += 4;
+    doc.text(new Date(venta.fecha).toLocaleString('es-CO'), 5, y); y += 3;
+    doc.setLineWidth(0.2); doc.line(5, y, 75, y); y += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Producto', 5, y); doc.text('Subtotal', 75, y, { align: 'right' }); y += 4;
+    doc.setFont('helvetica', 'normal');
+    venta.items.forEach(it => {
+      const nombreCorto = it.nombre.length > 30 ? it.nombre.slice(0, 30) + '…' : it.nombre;
+      doc.text(nombreCorto, 5, y); y += 3.6;
+      doc.text(`${it.cant} x ${money(it.precio)}`, 5, y);
+      doc.text(money(it.cant * it.precio), 75, y, { align: 'right' });
+      y += 5.2;
+    });
+
+    doc.line(5, y, 75, y); y += 5;
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.text('TOTAL', 5, y); doc.text(money(venta.total), 75, y, { align: 'right' }); y += 7;
+
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7);
+    doc.text('¡Gracias por su compra!', cx, y, { align: 'center' });
+
+    doc.save(`recibo_${venta.factura}.pdf`);
+  } catch (e) {
+    console.error('Error generando recibo:', e);
+    toast('⚠ No se pudo generar el recibo PDF', 'warn');
+  }
+}
 
 function renderHist() {
   const h = document.getElementById('histVentas');
-  if (!db.ventas.length) { h.innerHTML = '<p class="sub">Sin ventas</p>'; return; }
+  if (!db.ventas.length) { h.innerHTML = `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas todavía</div><div class="sub">Las ventas que confirmes aparecerán aquí</div></div>`; return; }
   const ultimas = [...db.ventas].reverse().slice(0, 20);
   h.innerHTML = `<table>
-    <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Total</th></tr></thead>
+    <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Total</th><th>Recibo</th></tr></thead>
     <tbody>${ultimas.map(v => `
       <tr>
         <td>${v.factura}</td>
         <td>${new Date(v.fecha).toLocaleDateString('es-CO')}</td>
-        <td>${v.items.map(i=>i.nombre).join(', ').slice(0,40)}</td>
+        <td style="text-align:left;">${v.items.map(i=>i.nombre).join(', ').slice(0,40)}</td>
         <td>${money(v.total)}</td>
+        <td><button class="btn sm b" onclick='generarReciboPDF(${JSON.stringify(v).replace(/'/g, "&#39;")})'>🧾</button></td>
       </tr>`).join('')}
     </tbody>
   </table>`;
@@ -960,12 +1078,12 @@ document.getElementById('btnScanRegistrar').onclick = () => {
 function renderScanHist() {
   document.getElementById('scanCount').textContent = scanHist.length + ' escaneos';
   const h = document.getElementById('scanHist');
-  if (!scanHist.length) { h.innerHTML = '<span style="color:#aaa;font-size:12px;">Sin escaneos aún.</span>'; return; }
+  if (!scanHist.length) { h.innerHTML = '<span style="color:var(--ink-mute);font-size:12px;">Sin escaneos aún.</span>'; return; }
   h.innerHTML = scanHist.map(e =>
     `<div class="hist-item">
-      <span style="color:#888">${e.hora}</span> &nbsp;
+      <span style="color:var(--ink-mute)">${e.hora}</span> &nbsp;
       <strong>${e.nombre}</strong>
-      <span style="color:#aaa;font-size:11px;"> (${e.codigo})</span>
+      <span style="color:var(--ink-mute);font-size:11px;"> (${e.codigo})</span>
     </div>`
   ).join('');
 }
@@ -980,6 +1098,18 @@ function renderResumen() {
   const unidsHoy  = ventasHoy.reduce((s, v) => s + v.items.reduce((ss, i) => ss + i.cant, 0), 0);
   const stockBajo = db.inventario.filter(i => i.cantidad <= 3);
 
+  // ── Últimos 7 días para el gráfico ──
+  const dias = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const totalDia = db.ventas
+      .filter(v => new Date(v.fecha).toDateString() === d.toDateString())
+      .reduce((s, v) => s + v.total, 0);
+    dias.push({ fecha: d, total: totalDia, esHoy: i === 0 });
+  }
+  const maxDia = Math.max(...dias.map(d => d.total), 1);
+
   document.getElementById('resContent').innerHTML = `
     <div class="stat-grid">
       <div class="stat"><div class="lbl">Ventas hoy</div><div class="val">${ventasHoy.length}</div></div>
@@ -987,25 +1117,43 @@ function renderResumen() {
       <div class="stat"><div class="lbl">Unidades vendidas</div><div class="val">${unidsHoy}</div></div>
       <div class="stat"><div class="lbl">Productos en inventario</div><div class="val">${db.inventario.length}</div></div>
     </div>
+    <div class="panel">
+      <h3>Ventas — últimos 7 días</h3>
+      <div class="chart-box">
+        <div class="chart-bars">
+          ${dias.map(d => {
+            const alturaPct = Math.max((d.total / maxDia) * 100, d.total > 0 ? 6 : 1.5);
+            return `<div class="chart-bar-wrap">
+              ${d.total > 0 ? `<div class="chart-val">${d.total >= 1000 ? Math.round(d.total/1000)+'k' : d.total}</div>` : ''}
+              <div class="chart-bar${d.esHoy ? ' today' : ''}" style="height:${alturaPct}%;" title="${money(d.total)}"></div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${dias.map(d => `<div class="chart-bar-wrap" style="height:auto;"><div class="chart-lbl">${d.fecha.toLocaleDateString('es-CO',{weekday:'short'}).replace('.','')}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
     ${stockBajo.length ? `
-    <div class="panel" style="border-left:4px solid #e08000;">
-      <h3 style="color:#a05000;margin-bottom:8px;">⚠ Stock bajo (≤ 3 unidades)</h3>
+    <div class="panel" style="border-left:3px solid var(--warn);">
+      <h3 style="color:var(--warn);">⚠ Stock bajo (≤ 3 unidades)</h3>
       ${stockBajo.map(i => `<div style="padding:4px 0;font-size:13px;"><strong>${i.nombre}</strong> — ${i.cantidad} uds.</div>`).join('')}
     </div>` : ''}
     <div class="panel">
-      <h3 style="margin-bottom:8px;">Ventas de hoy</h3>
+      <h3>Ventas de hoy</h3>
       ${ventasHoy.length ? `
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Hora</th><th>Productos</th><th>Total</th></tr></thead>
+        <thead><tr><th>#</th><th>Hora</th><th>Productos</th><th>Total</th><th></th></tr></thead>
         <tbody>${ventasHoy.map(v => `
           <tr>
             <td>${v.factura}</td>
             <td>${new Date(v.fecha).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
             <td style="text-align:left;">${v.items.map(i=>i.nombre).join(', ').slice(0,50)}</td>
             <td>${money(v.total)}</td>
+            <td><button class="btn sm sec" onclick='imprimirRecibo(${JSON.stringify(v).replace(/'/g,"&apos;")})'>🧾 Recibo</button></td>
           </tr>`).join('')}
         </tbody>
-      </table></div>` : '<p class="sub">Sin ventas hoy</p>'}
+      </table></div>` : `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas hoy todavía</div><div class="sub">Las ventas confirmadas del día aparecerán aquí</div></div>`}
     </div>`;
 }
 
