@@ -5,66 +5,88 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title id="pageTitle">FarmaControl</title>
 <link rel="manifest" href="manifest.json"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
-  /* Marca — acento, no fondo */
-  --brand:#7a1230; --brand-l:#9a1a3d; --brand-dark:#5c0d24;
-  /* Superficie neutra — deja respirar el contenido */
-  --bg:#eef0f3; --surface:#ffffff; --surface-2:#f7f8fa;
-  --ink:#1c2024; --ink-soft:#5b6470; --ink-mute:#94a0ac;
-  --line:#e4e7eb;
+  /* Marca — verde farmacia (la cruz de toda droguería colombiana), acento dorado para acción */
+  --brand:#0f6b4c; --brand-l:#128a61; --brand-dark:#0a4a35; --brand-ghost:#e6f3ee;
+  --gold:#e8a33d; --gold-dark:#c8842a; --gold-ghost:#fdf1de;
+  /* Superficie — papel cálido, no blanco clínico */
+  --bg:#f6f5f0; --surface:#ffffff; --surface-2:#faf9f5;
+  --ink:#1a2420; --ink-soft:#556259; --ink-mute:#8b988e;
+  --line:#e6e4dc;
   /* Semántica */
   --ok:#16803c; --ok-bg:#eafbf1; --ok-line:#bce8cd;
   --warn:#b45300; --warn-bg:#fff6e8; --warn-line:#f3d69b;
   --err:#c0362c; --err-bg:#fdecea; --err-line:#f3bdb8;
   --info:#1d4fa8; --info-bg:#eef3fd; --info-line:#c3d6f5;
-  --shadow:0 1px 2px rgba(20,20,30,.04), 0 8px 24px rgba(20,20,30,.08);
-  --shadow-sm:0 1px 2px rgba(20,20,30,.06);
-  --r:12px; --r-sm:8px;
+  --shadow:0 1px 2px rgba(20,30,25,.05), 0 10px 28px rgba(15,40,30,.08);
+  --shadow-sm:0 1px 3px rgba(20,30,25,.07);
+  --r:14px; --r-sm:9px;
+  --f-display:"Space Grotesk",-apple-system,sans-serif;
+  --f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  font-family:var(--f-body);
   background:var(--bg);min-height:100vh;color:var(--ink);font-size:15px;
   -webkit-font-smoothing:antialiased;
 }
 
-/* ─── LOGIN ─── */
-.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--brand-dark),var(--brand));z-index:9999;}
-.login-card{background:var(--surface);border-radius:var(--r);padding:28px 24px;width:340px;max-width:94vw;box-shadow:var(--shadow);text-align:center;}
-.login-logo{width:88px;height:88px;margin:0 auto 14px;border-radius:14px;overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;}
+/* ─── LOGIN — motivo de firma: pulso de escaneo ambiental ─── */
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(232,163,61,.18), transparent 42%),
+    linear-gradient(155deg,var(--brand-dark),var(--brand) 55%,var(--brand-l));
+  z-index:9999;overflow:hidden;}
+.overlay::before{
+  content:'';position:absolute;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(232,163,61,.9),transparent);
+  animation:scanSweep 3.2s ease-in-out infinite;
+  box-shadow:0 0 16px 2px rgba(232,163,61,.6);
+}
+@keyframes scanSweep{0%{top:8%;opacity:0;}8%{opacity:1;}50%{top:92%;opacity:1;}58%{opacity:0;}100%{top:92%;opacity:0;}}
+.login-card{background:var(--surface);border-radius:calc(var(--r) + 4px);padding:32px 26px;width:350px;max-width:94vw;box-shadow:0 24px 60px rgba(0,0,0,.28);text-align:center;position:relative;}
+.login-logo{width:64px;height:64px;margin:0 auto 16px;border-radius:16px;overflow:hidden;background:var(--brand-ghost);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(15,107,76,.12);}
 .login-logo img{width:100%;height:100%;object-fit:cover;}
-.lc-title{font-size:19px;font-weight:800;color:var(--ink);margin-bottom:4px;letter-spacing:-.01em;}
-.lc-sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:18px;}
-.lc-form{display:flex;flex-direction:column;gap:9px;}
-.lc-form input{padding:12px 13px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:15px;outline:none;transition:.15s;background:var(--surface-2);}
-.lc-form input:focus{border-color:var(--brand);background:var(--surface);}
+.login-logo svg{width:34px;height:34px;}
+.lc-title{font-family:var(--f-display);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:4px;letter-spacing:-.01em;}
+.lc-sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:20px;}
+.lc-form{display:flex;flex-direction:column;gap:10px;}
+.lc-form input{padding:13px 14px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:15px;outline:none;transition:.15s;background:var(--surface-2);font-family:var(--f-body);}
+.lc-form input:focus{border-color:var(--brand);background:var(--surface);box-shadow:0 0 0 3px var(--brand-ghost);}
 
 /* ─── TOPBAR ─── */
-.topbar{display:flex;align-items:center;gap:2px;padding:0 12px;height:54px;background:var(--brand);position:sticky;top:0;z-index:50;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.topbar{display:flex;align-items:center;gap:2px;padding:0 12px;height:56px;background:var(--brand-dark);position:sticky;top:0;z-index:50;overflow-x:auto;-webkit-overflow-scrolling:touch;box-shadow:0 2px 10px rgba(0,0,0,.16);}
 .topbar::-webkit-scrollbar{height:0;}
-.tb-brand{font-weight:800;color:#fff;font-size:14.5px;white-space:nowrap;margin-right:8px;flex-shrink:0;letter-spacing:-.01em;}
-.nb{padding:8px 12px;border-radius:var(--r-sm);border:none;background:transparent;color:rgba(255,255,255,.75);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:36px;transition:.15s;}
-.nb.on{background:rgba(255,255,255,.16);color:#fff;}
-.nb:hover:not(.on){background:rgba(255,255,255,.08);}
+.tb-brand{font-family:var(--f-display);display:flex;align-items:center;gap:7px;font-weight:600;color:#fff;font-size:15px;white-space:nowrap;margin-right:10px;flex-shrink:0;letter-spacing:-.01em;}
+.tb-brand svg{width:20px;height:20px;flex-shrink:0;}
+.nb{padding:9px 13px;border-radius:var(--r-sm);border:none;background:transparent;color:rgba(255,255,255,.68);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:38px;transition:.15s;}
+.nb.on{background:var(--gold);color:var(--brand-dark);font-weight:700;}
+.nb:hover:not(.on){background:rgba(255,255,255,.1);color:#fff;}
 .tb-space{flex:1;}
-.conn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0;}
+.conn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0;}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-mute);flex-shrink:0;}
 .dot.on{background:#3ddc84;}
 .dot.off{background:#ff6b6b;}
 
 /* ─── WRAPPER ─── */
-.wrap{width:96%;max-width:1200px;margin:18px auto;padding:0;}
-h1{font-size:19px;color:var(--ink);margin-bottom:14px;font-weight:800;letter-spacing:-.01em;}
-h2{font-size:15px;color:var(--ink);margin:0 0 10px 0;font-weight:700;}
+.wrap{width:96%;max-width:1200px;margin:20px auto;padding:0;}
+h1{font-family:var(--f-display);font-size:21px;color:var(--ink);margin-bottom:16px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;}
+h2{font-family:var(--f-display);font-size:16px;color:var(--ink);margin:0 0 10px 0;font-weight:600;}
 h3{font-size:13.5px;color:var(--ink);margin:0 0 8px 0;font-weight:700;}
 p.sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:10px;}
 
-/* ─── BOTONES — jerarquía clara ─── */
-.btn{padding:10px 16px;border-radius:var(--r-sm);border:none;cursor:pointer;font-weight:700;font-size:14px;min-height:42px;transition:.15s;background:var(--surface-2);color:var(--ink-soft);}
+/* ─── BOTONES — jerarquía clara: dorado = la acción que cierra el flujo ─── */
+.btn{font-family:var(--f-body);padding:10px 16px;border-radius:var(--r-sm);border:none;cursor:pointer;font-weight:700;font-size:14px;min-height:42px;transition:.15s;background:var(--surface-2);color:var(--ink-soft);}
 .btn:active{transform:scale(.98);}
-/* Primario — una sola acción destacada por pantalla */
+/* Dorado — el único CTA que cierra cada flujo (confirmar venta, guardar, registrar, ingresar) */
+.btn.gold{background:linear-gradient(155deg,var(--gold),var(--gold-dark));color:var(--brand-dark);box-shadow:0 3px 10px rgba(200,132,42,.35);}
+.btn.gold:hover{background:var(--gold-dark);color:#fff;}
+/* Marca — acciones de apoyo (agregar, buscar, activar) */
 .btn.prim,.btn.g{background:var(--ok);color:#fff;box-shadow:var(--shadow-sm);}
 .btn.prim:hover,.btn.g:hover{background:#116631;}
 .btn.b{background:var(--brand);color:#fff;box-shadow:var(--shadow-sm);}
@@ -78,20 +100,20 @@ p.sub{font-size:12.5px;color:var(--ink-mute);margin-bottom:10px;}
 .btn.sm{padding:7px 11px;font-size:12px;min-height:32px;}
 
 /* ─── PANEL / TARJETA ─── */
-.panel{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm);border:1px solid var(--line);margin-bottom:12px;}
+.panel{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-sm);border:1px solid var(--line);border-top:3px solid var(--brand);margin-bottom:12px;}
 
 /* ─── FORMS ─── */
 .fi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
 input[type=text],input[type=number],input[type=password],select{
-  padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:14px;outline:none;transition:.15s;min-height:42px;background:var(--surface);color:var(--ink);
+  font-family:var(--f-body);padding:10px 11px;border-radius:var(--r-sm);border:1.5px solid var(--line);font-size:14px;outline:none;transition:.15s;min-height:42px;background:var(--surface);color:var(--ink);
 }
-input:focus,select:focus{border-color:var(--brand);}
+input:focus,select:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-ghost);}
 
 /* ─── TABLA ─── */
 .tbl-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th,td{padding:10px 8px;text-align:center;border-bottom:1px solid var(--line);}
-th{background:var(--surface-2);color:var(--ink-soft);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+th{background:var(--surface-2);color:var(--brand-dark);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
 tr:hover td{background:var(--surface-2);}
 .low td{background:var(--warn-bg)!important;}
 
@@ -122,16 +144,16 @@ tr:hover td{background:var(--surface-2);}
 
 /* ─── RESUMEN ─── */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
-.stat{background:var(--surface);border-radius:var(--r-sm);padding:14px;border:1px solid var(--line);border-left:3px solid var(--brand);}
+.stat{background:var(--surface);border-radius:var(--r-sm);padding:14px;border:1px solid var(--line);border-left:3px solid var(--gold-dark);}
 .stat .lbl{font-size:11px;color:var(--ink-mute);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
-.stat .val{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.01em;}
+.stat .val{font-family:var(--f-display);font-size:23px;font-weight:600;color:var(--ink);letter-spacing:-.01em;}
 
 /* ─── GRÁFICO VENTAS 7 DÍAS ─── */
 .chart-box{padding:6px 4px 0;}
 .chart-bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:6px;}
 .chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
 .chart-bar{width:100%;max-width:34px;background:var(--brand);border-radius:4px 4px 0 0;transition:.3s;min-height:3px;}
-.chart-bar.today{background:var(--ok);}
+.chart-bar.today{background:var(--gold-dark);}
 .chart-lbl{font-size:10px;color:var(--ink-mute);margin-top:6px;font-weight:600;text-transform:uppercase;}
 .chart-val{font-size:10px;color:var(--ink-soft);font-weight:700;margin-bottom:3px;}
 
@@ -174,13 +196,21 @@ tr:hover td{background:var(--surface-2);}
 <!-- LOGIN -->
 <div id="loginOverlay" class="overlay">
   <div class="login-card">
-    <div class="login-logo"><img id="loginLogo" src="fondo/logo.png" alt="Logo" onerror="this.style.display='none'"></div>
+    <div class="login-logo" id="loginLogoBox">
+      <img id="loginLogo" src="fondo/logo.png" alt="Logo" onerror="this.style.display='none';document.getElementById('loginLogoSvg').style.display='flex';">
+      <div id="loginLogoSvg" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.5 14.5 14.5 4.5a4.24 4.24 0 0 1 6 6l-10 10a4.24 4.24 0 0 1-6-6Z" stroke="#0f6b4c" stroke-width="1.8"/>
+          <path d="M9 10l5 5" stroke="#e8a33d" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
     <div class="lc-title" id="loginTitle">FarmaControl</div>
     <div class="lc-sub">Sistema de Inventario y Facturación</div>
     <div class="lc-form">
       <input id="lUser" type="text" placeholder="Usuario" autocomplete="username"/>
       <input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
-      <button class="btn b" id="btnLogin">Ingresar</button>
+      <button class="btn gold" id="btnLogin">Ingresar</button>
       <div id="lErr" style="color:var(--err);font-size:12.5px;display:none;font-weight:600;">Usuario o contraseña incorrectos</div>
     </div>
   </div>
@@ -188,7 +218,13 @@ tr:hover td{background:var(--surface-2);}
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <div class="tb-brand">💊 <span id="tbBrand">FarmaControl</span></div>
+  <div class="tb-brand">
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4.5 14.5 14.5 4.5a4.24 4.24 0 0 1 6 6l-10 10a4.24 4.24 0 0 1-6-6Z" stroke="#e8a33d" stroke-width="2"/>
+      <path d="M9 10l5 5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span id="tbBrand">FarmaControl</span>
+  </div>
   <button class="nb on" data-sec="inv">Inventario</button>
   <button class="nb" data-sec="venta">Ventas</button>
   <button class="nb" data-sec="scan">🔫 Escanear</button>
@@ -259,7 +295,7 @@ tr:hover td{background:var(--surface-2);}
         <div id="cart"></div>
         <div class="total-row"><span>Total:</span><span id="totalVenta">$0</span></div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-          <button class="btn g" id="btnVender" style="flex:1;">✅ Confirmar venta</button>
+          <button class="btn gold" id="btnVender" style="flex:1;">✅ Confirmar venta</button>
           <button class="btn gr sm" id="btnLimpiarCart">🗑</button>
         </div>
       </div>
@@ -321,7 +357,7 @@ tr:hover td{background:var(--surface-2);}
             <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Nuevo precio (0=sin cambio):</label>
             <input id="scanExPrecio" type="number" min="0" step="0.01" value="0" style="width:130px;"/>
           </div>
-          <button class="btn g" id="btnScanGuardar">💾 Guardar</button>
+          <button class="btn gold" id="btnScanGuardar">💾 Guardar</button>
         </div>
       </div>
 
@@ -337,7 +373,7 @@ tr:hover td{background:var(--surface-2);}
           <input id="scanNuevoCant" type="number" min="1" value="1"/>
           <label>Precio unitario ($):</label>
           <input id="scanNuevoPrecio" type="number" min="0" step="0.01" value="0"/>
-          <button class="btn" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
+          <button class="btn gold" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
         </div>
       </div>
 
