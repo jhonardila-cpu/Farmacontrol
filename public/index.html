@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title id="pageTitle">FarmaControl</title>
+<link rel="manifest" href="manifest.json"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --v:#800020; --vl:#a00030; --w:#fff;
+  --shadow:0 8px 24px rgba(0,0,0,.18);
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:linear-gradient(160deg,#800020,#a00030);min-height:100vh;color:#222;font-size:15px;}
+
+/* ─── LOGIN ─── */
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999;}
+.login-card{background:#fff;border-radius:var(--r);padding:24px;width:340px;max-width:94vw;box-shadow:var(--shadow);text-align:center;}
+.login-logo{width:90px;height:90px;margin:0 auto 12px;border-radius:12px;overflow:hidden;background:#f5f5f5;display:flex;align-items:center;justify-content:center;}
+.login-logo img{width:100%;height:100%;object-fit:cover;}
+.lc-title{font-size:17px;font-weight:800;color:var(--v);margin-bottom:4px;}
+.lc-sub{font-size:12px;color:#888;margin-bottom:14px;}
+.lc-form{display:flex;flex-direction:column;gap:8px;}
+.lc-form input{padding:11px 12px;border-radius:8px;border:1.5px solid #ddd;font-size:15px;outline:none;transition:.2s;}
+.lc-form input:focus{border-color:var(--v);}
+
+/* ─── TOPBAR ─── */
+.topbar{display:flex;align-items:center;gap:4px;padding:8px 12px;background:rgba(0,0,0,.18);position:sticky;top:0;z-index:50;backdrop-filter:blur(6px);overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.topbar::-webkit-scrollbar{height:0;}
+.tb-brand{font-weight:800;color:#fff;font-size:14px;white-space:nowrap;margin-right:4px;flex-shrink:0;}
+.nb{padding:9px 11px;border-radius:8px;border:none;background:transparent;color:#fff;cursor:pointer;font-weight:700;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:38px;}
+.nb.on{background:rgba(255,255,255,.18);}
+.tb-space{flex:1;}
+.conn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;flex-shrink:0;}
+.dot{width:8px;height:8px;border-radius:50%;background:#aaa;flex-shrink:0;}
+.dot.on{background:#3ddc84;}
+.dot.off{background:#ff6b6b;}
+
+/* ─── WRAPPER ─── */
+.wrap{width:96%;max-width:1200px;margin:14px auto;background:#fff;border-radius:var(--r);padding:16px;box-shadow:var(--shadow);}
+h1{font-size:18px;color:var(--v);margin-bottom:12px;}
+h2{font-size:16px;color:var(--v);margin:0 0 10px 0;}
+h3{font-size:14px;color:var(--v);margin:0 0 8px 0;}
+p.sub{font-size:12px;color:#888;margin-bottom:10px;}
+
+/* ─── BOTONES ─── */
+.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;background:var(--v);color:#fff;font-weight:700;font-size:14px;min-height:40px;transition:.15s;}
+.btn:active{opacity:.8;}
+.btn.g{background:#1a7a1a;}
+.btn.b{background:#1a4fa0;}
+.btn.gr{background:#666;}
+.btn.sm{padding:6px 10px;font-size:12px;min-height:32px;}
+
+/* ─── PANEL ─── */
+.panel{background:#fff;border-radius:var(--r);padding:12px;box-shadow:0 3px 12px rgba(0,0,0,.07);margin-bottom:12px;}
+
+/* ─── FORMS ─── */
+.fi{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+input[type=text],input[type=number],input[type=password],select{
+  padding:9px 10px;border-radius:7px;border:1.5px solid #ddd;font-size:14px;outline:none;transition:.2s;min-height:40px;
+}
+input:focus,select:focus{border-color:var(--v);}
+
+/* ─── TABLA ─── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:8px 6px;text-align:center;border-bottom:1px solid #f0f0f0;}
+th{background:var(--v);color:#fff;font-size:12px;}
+tr:hover td{background:#fdf5f7;}
+.low td{background:#fff8f0!important;}
+
+/* ─── SCAN ─── */
+.scan-box{
+  border:2px dashed #ddd;border-radius:10px;padding:14px;text-align:center;
+  transition:.3s;cursor:pointer;
+}
+.scan-box.active{border-color:#1a7a1a;background:#f0fff4;}
+#campoScan{
+  width:100%;padding:14px;font-size:18px;border-radius:8px;
+  border:2px solid #1a7a1a;background:#f0fff4;color:#111;
+  font-weight:700;letter-spacing:2px;text-align:center;min-height:52px;
+}
+.scan-ok{background:#f0fff4;border:2px solid #1a7a1a;border-radius:8px;padding:10px 12px;color:#1a5c1a;font-weight:700;}
+.scan-nf{background:#fff8f0;border:2px solid #e08000;border-radius:8px;padding:10px 12px;color:#7a4000;font-weight:700;}
+.scan-form{display:flex;flex-direction:column;gap:8px;}
+.scan-form label{font-size:12px;font-weight:700;color:var(--v);}
+.scan-form input{font-size:15px;min-height:44px;}
+.hist-item{padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;}
+
+/* ─── VENTA ─── */
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.total-row{display:flex;justify-content:space-between;font-weight:800;font-size:15px;padding:10px 4px;}
+
+/* ─── RESUMEN ─── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px;}
+.stat{background:linear-gradient(135deg,#fdf5f7,#fff);border-radius:8px;padding:12px;border-left:4px solid var(--v);}
+.stat .lbl{font-size:11px;color:#888;margin-bottom:4px;}
+.stat .val{font-size:20px;font-weight:800;color:var(--v);}
+
+/* ─── TOAST ─── */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#111;color:#fff;padding:11px 22px;border-radius:10px;
+  font-weight:700;font-size:13px;z-index:9999;opacity:0;
+  transition:opacity .3s;pointer-events:none;white-space:nowrap;
+}
+
+/* ─── PULSE ─── */
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(.7);}}
+.pulse{animation:pulse 1.2s ease-in-out infinite;}
+
+/* ─── RESPONSIVE Zebra MC9300 (~480px) ─── */
+@media(max-width:540px){
+  .wrap{width:100%;margin:0;border-radius:0;padding:10px;box-shadow:none;}
+  h1{font-size:15px;}
+  .tb-brand span{display:none;}
+  .conn span:last-child{display:none;}
+  .fi{flex-direction:column;align-items:stretch;}
+  .fi>input,.fi>select,.fi>button{width:100%;}
+  th,td{padding:6px 3px;font-size:11px;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .btn{min-height:44px;font-size:14px;}
+  input[type=text],input[type=number],input[type=password],select{min-height:44px;font-size:15px;}
+}
+@media(max-width:380px){
+  .nb{padding:8px 8px;font-size:12px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay" class="overlay">
+  <div class="login-card">
+    <div class="login-logo"><img id="loginLogo" src="fondo/logo.png" alt="Logo" onerror="this.style.display='none'"></div>
+    <div class="lc-title" id="loginTitle">FarmaControl</div>
+    <div class="lc-sub">Sistema de Inventario y Facturación</div>
+    <div class="lc-form">
+      <input id="lUser" type="text" placeholder="Usuario" autocomplete="username"/>
+      <input id="lPass" type="password" placeholder="Contraseña" autocomplete="current-password"/>
+      <button class="btn" id="btnLogin">Ingresar</button>
+      <div id="lErr" style="color:#c00;font-size:12px;display:none;">Usuario o contraseña incorrectos</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand">💊 <span id="tbBrand">FarmaControl</span></div>
+  <button class="nb on" data-sec="inv">Inventario</button>
+  <button class="nb" data-sec="venta">Ventas</button>
+  <button class="nb" data-sec="scan">🔫 Escanear</button>
+  <button class="nb" data-sec="res">Resumen</button>
+  <div class="tb-space"></div>
+  <div class="conn"><div class="dot" id="dot"></div><span id="connTxt">Conectando</span></div>
+  <button class="nb" id="btnOut" style="display:none;font-size:12px;">Salir</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="wrap" style="display:none;">
+
+  <!-- INVENTARIO -->
+  <section id="sec-inv">
+    <h1>📦 Inventario</h1>
+    <div class="panel">
+      <div class="fi">
+        <input id="invNom" type="text" placeholder="Nombre del medicamento" style="flex:2;min-width:160px;"/>
+        <input id="invCant" type="number" min="0" value="1" placeholder="Cant." style="width:80px;"/>
+        <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio" style="width:110px;"/>
+        <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
+        <button class="btn" id="btnAddInv">➕ Agregar</button>
+      </div>
+      <div class="fi" style="margin-bottom:8px;">
+        <input id="fNom" type="text" placeholder="🔍 Buscar..." style="flex:1;min-width:120px;"/>
+        <input id="fCantMin" type="number" placeholder="Stock mín" style="width:90px;"/>
+        <button class="btn b sm" id="btnFiltroOff">Limpiar</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
+          <tbody id="tbInv"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn b sm" id="btnExportCSV">⬇ CSV</button>
+        <button class="btn gr sm" id="btnLimpiarInv" style="background:#c00;">🗑 Limpiar inventario</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- VENTAS -->
+  <section id="sec-venta" style="display:none;">
+    <h1>🛒 Registrar Venta</h1>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+      <div class="panel" style="flex:1;min-width:280px;">
+        <h2>Agregar al carrito</h2>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="btn g" id="btnVentaScanOn">🔫 Activar escáner</button>
+          <button class="btn gr" id="btnVentaScanOff" style="display:none;">🔴 Desactivar escáner</button>
+        </div>
+        <div id="ventaScanStatus" style="display:none;background:#eaffea;border:2px solid #1a7a1a;border-radius:8px;padding:10px;margin-bottom:10px;align-items:center;gap:8px;">
+          <div class="dot on pulse"></div>
+          <div style="font-size:12px;font-weight:700;color:#1a5c1a;">Escáner activo — dispara sobre el producto, se agrega solo al carrito</div>
+        </div>
+        <input id="campoScanVenta" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          placeholder="Toca aquí y dispara el gatillo..." readonly
+          style="display:none;width:100%;font-size:16px;padding:12px;border:2px solid #1a7a1a;background:#f0fff4;border-radius:8px;letter-spacing:1px;font-weight:700;min-height:48px;margin-bottom:10px;"/>
+
+        <div class="fi" style="flex-direction:column;align-items:stretch;">
+          <select id="selProd" style="width:100%;"></select>
+          <div style="display:flex;gap:8px;">
+            <input id="ventaCant" type="number" min="1" value="1" style="width:80px;"/>
+            <button class="btn" id="btnAddCart" style="flex:1;">➕ Agregar</button>
+          </div>
+        </div>
+        <div id="cart"></div>
+        <div class="total-row"><span>Total:</span><span id="totalVenta">$0</span></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn g" id="btnVender" style="flex:1;">✅ Confirmar venta</button>
+          <button class="btn gr sm" id="btnLimpiarCart">🗑</button>
+        </div>
+      </div>
+      <div class="panel" style="flex:1;min-width:280px;">
+        <h2>Historial de ventas</h2>
+        <div id="histVentas" class="tbl-wrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESCANEAR -->
+  <section id="sec-scan" style="display:none;">
+    <h1>🔫 Escanear — Zebra MC9300</h1>
+    <div class="panel">
+
+      <!-- Estado activo -->
+      <div id="scanStatus" style="display:none;background:#eaffea;border:2px solid #1a7a1a;border-radius:8px;padding:12px;margin-bottom:12px;display:none;align-items:center;gap:10px;">
+        <div class="dot on pulse"></div>
+        <div>
+          <div style="font-weight:800;color:#1a5c1a;font-size:14px;">Escáner activo — dispara el gatillo</div>
+          <div style="font-size:11px;color:#2a8f2a;">El código aparece automáticamente abajo</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn g" id="btnScanOn">🟢 Activar</button>
+        <button class="btn gr" id="btnScanOff" style="display:none;">🔴 Desactivar</button>
+        <button class="btn b" id="btnScanClear">🗑 Limpiar</button>
+      </div>
+
+      <!-- Campo que recibe el input del láser -->
+      <div id="scanField" style="display:none;margin-bottom:12px;">
+        <label style="font-size:12px;font-weight:700;color:var(--v);display:block;margin-bottom:6px;">
+          📍 Campo activo — toca aquí si el teclado no aparece, luego dispara:
+        </label>
+        <div style="display:flex;gap:8px;">
+          <input id="campoScan" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Código aquí..." readonly
+            style="flex:1;font-size:18px;padding:12px;border:2px solid #1a7a1a;background:#f0fff4;border-radius:8px;letter-spacing:2px;font-weight:700;min-height:52px;cursor:pointer;"/>
+          <button class="btn b" id="btnBuscarManual" style="min-width:80px;">🔍 Buscar</button>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:4px;">
+          También puedes escribir el código a mano y tocar Buscar.
+        </div>
+      </div>
+
+      <!-- Resultado -->
+      <div id="scanRes" style="display:none;margin-bottom:12px;"></div>
+
+      <!-- Formulario producto existente -->
+      <div id="scanExiste" class="panel" style="display:none;">
+        <h3 style="color:#1a5c1a;">✅ Producto encontrado</h3>
+        <div id="scanExisteInfo" style="margin-bottom:10px;font-size:14px;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+          <div>
+            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Unidades a agregar:</label>
+            <input id="scanExCant" type="number" min="1" value="1" style="width:90px;"/>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Nuevo precio (0=sin cambio):</label>
+            <input id="scanExPrecio" type="number" min="0" step="0.01" value="0" style="width:130px;"/>
+          </div>
+          <button class="btn g" id="btnScanGuardar">💾 Guardar</button>
+        </div>
+      </div>
+
+      <!-- Formulario producto nuevo -->
+      <div id="scanNuevo" class="panel" style="display:none;">
+        <h3 style="color:#a35000;">🆕 Producto nuevo — registrar</h3>
+        <div class="scan-form">
+          <label>Código:</label>
+          <input id="scanNuevoCod" type="text" readonly style="background:#f5f5f5;"/>
+          <label>Nombre: <span style="color:#c00">*</span></label>
+          <input id="scanNuevoNom" type="text" placeholder="Ej: Paracetamol 500mg x10"/>
+          <label>Cantidad inicial:</label>
+          <input id="scanNuevoCant" type="number" min="1" value="1"/>
+          <label>Precio unitario ($):</label>
+          <input id="scanNuevoPrecio" type="number" min="0" step="0.01" value="0"/>
+          <button class="btn" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
+        </div>
+      </div>
+
+      <!-- Historial sesión -->
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <h3 style="margin:0;">📋 Escaneos de esta sesión</h3>
+          <span id="scanCount" style="font-size:11px;color:#888;">0 escaneos</span>
+        </div>
+        <div id="scanHist" style="max-height:200px;overflow-y:auto;">
+          <span style="color:#aaa;font-size:12px;">Sin escaneos aún.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section id="sec-res" style="display:none;">
+    <h1>📊 Resumen Diario</h1>
+    <div id="resContent"></div>
+  </section>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  ESTADO
+// ════════════════════════════════════════════════════════
+let db = { inventario: [], ventas: [], numeroFactura: 1 };
+let carrito = [];
+let ws = null;
+let wsOk = false;
+let sesion = null;
+let scanActivo = false;
+let scanHist = [];
+let _scanTimer = null;
+
+// ════════════════════════════════════════════════════════
+//  WEBSOCKET
+// ════════════════════════════════════════════════════════
+function wsConnect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const host  = location.host;
+  try { ws = new WebSocket(`${proto}://${host}`); }
+  catch(e) { setConn(false); return; }
+
+  ws.onopen = () => {
+    wsOk = true; setConn(true);
+    wsSend({ t: 'get_db' });
+  };
+
+  ws.onmessage = e => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    switch(m.t) {
+      case 'db':
+        db = m.db;
+        renderAll();
+        break;
+      case 'inv_add':
+        if (!db.inventario.find(i => i.id === m.item.id)) {
+          db.inventario.push(m.item); renderInv(); renderVentaSelect();
+        }
+        break;
+      case 'inv_update': {
+        const idx = db.inventario.findIndex(i => i.id === m.item.id);
+        if (idx >= 0) { db.inventario[idx] = m.item; renderInv(); renderVentaSelect(); }
+        break;
+      }
+      case 'inv_delete':
+        db.inventario = db.inventario.filter(i => i.id !== m.id);
+        renderInv(); renderVentaSelect();
+        break;
+      case 'inv_sync':
+        db.inventario = m.inventario; renderInv(); renderVentaSelect();
+        break;
+      case 'venta':
+        if (!db.ventas.find(v => v.id === m.venta.id)) {
+          db.ventas.push(m.venta); db.numeroFactura = m.numeroFactura;
+          db.inventario = m.inventario;
+          renderHist(); renderInv(); renderVentaSelect();
+        }
+        break;
+      case 'scan': {
+        // 🔥 Llegó un código escaneado desde la Zebra (módulo Escanear)
+        const latMs = m.ts ? (Date.now() - m.ts) : null;
+        const lat = latMs !== null ? ` (${latMs}ms)` : '';
+        toast(`📡 Zebra escaneó: ${m.codigo}${lat}`);
+        irSec('scan');
+        procesarCodigo(m.codigo);
+        break;
+      }
+      case 'scan_venta': {
+        // 🔥 Llegó un código escaneado desde la Zebra (módulo Ventas)
+        const latMs = m.ts ? (Date.now() - m.ts) : null;
+        const lat = latMs !== null ? ` (${latMs}ms)` : '';
+        procesarCodigoVenta(m.codigo);
+        break;
+      }
+    }
+  };
+
+  ws.onclose = () => { wsOk = false; setConn(false); setTimeout(wsConnect, 3000); };
+  ws.onerror = () => { wsOk = false; setConn(false); };
+}
+
+function wsSend(obj) {
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj));
+}
+
+function setConn(ok) {
+  document.getElementById('dot').className = 'dot ' + (ok ? 'on' : 'off');
+  document.getElementById('connTxt').textContent = ok ? 'En red' : 'Sin red';
+}
+
+// ════════════════════════════════════════════════════════
+//  LOGIN
+// ════════════════════════════════════════════════════════
+// Carga el nombre del negocio configurado por variables de entorno en el servidor
+async function cargarConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const cfg = await r.json();
+    if (cfg.nombre) {
+      document.getElementById('pageTitle').textContent = cfg.nombre;
+      document.getElementById('loginTitle').textContent = cfg.nombre;
+      document.getElementById('tbBrand').textContent = cfg.nombre;
+    }
+  } catch (e) { /* si falla, se quedan los valores por defecto */ }
+}
+
+function loginInit() {
+  cargarConfig();
+  sesion = sessionStorage.getItem('fc_user');
+  if (sesion) { showApp(); return; }
+  document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+document.getElementById('btnLogin').onclick = async () => {
+  const u = document.getElementById('lUser').value.trim();
+  const p = document.getElementById('lPass').value;
+  document.getElementById('lErr').style.display = 'none';
+  if (!u || !p) { document.getElementById('lErr').textContent = 'Ingresa usuario y contraseña'; document.getElementById('lErr').style.display = 'block'; return; }
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario: u, clave: p })
+    });
+    const data = await r.json();
+    if (data.ok) {
+      sessionStorage.setItem('fc_user', data.usuario);
+      sessionStorage.setItem('fc_rol', data.rol);
+      sesion = data.usuario;
+      document.getElementById('loginOverlay').style.display = 'none';
+      showApp();
+    } else {
+      document.getElementById('lErr').textContent = data.error || 'Usuario o contraseña incorrectos';
+      document.getElementById('lErr').style.display = 'block';
+    }
+  } catch (e) {
+    document.getElementById('lErr').textContent = 'No se pudo conectar al servidor';
+    document.getElementById('lErr').style.display = 'block';
+  }
+};
+
+document.getElementById('lPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnLogin').click();
+});
+
+document.getElementById('btnOut').onclick = () => {
+  sessionStorage.removeItem('fc_user');
+  sessionStorage.removeItem('fc_rol');
+  location.reload();
+};
+
+function showApp() {
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('btnOut').style.display = 'inline-block';
+  wsConnect();
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════════════════
+const secs = ['inv','venta','scan','res'];
+
+function irSec(id) {
+  secs.forEach(s => {
+    document.getElementById('sec-'+s).style.display = s === id ? '' : 'none';
+    document.querySelector(`[data-sec="${s}"]`).classList.toggle('on', s === id);
+  });
+  if (id === 'res') renderResumen();
+  if (id !== 'scan') apagaScan();
+  if (id !== 'venta' && typeof ventaScanActivo !== 'undefined' && ventaScanActivo) apagarScanVenta();
+}
+
+document.querySelectorAll('[data-sec]').forEach(btn => {
+  btn.onclick = () => irSec(btn.dataset.sec);
+});
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+function money(n) {
+  return '$' + Number(n||0).toLocaleString('es-CO');
+}
+
+function uid() {
+  return Math.random().toString(36).slice(2,10);
+}
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
+// ════════════════════════════════════════════════════════
+//  INVENTARIO
+// ════════════════════════════════════════════════════════
+function renderInv() {
+  const fNom  = (document.getElementById('fNom').value||'').toLowerCase();
+  const fCant = Number(document.getElementById('fCantMin').value) || 0;
+
+  const lista = db.inventario.filter(i =>
+    i.nombre.toLowerCase().includes(fNom) &&
+    i.cantidad >= fCant
+  );
+
+  const tb = document.getElementById('tbInv');
+  if (!lista.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="color:#aaa;padding:16px;">Sin productos</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = lista.map((item, idx) => `
+    <tr class="${item.cantidad <= 3 ? 'low' : ''}">
+      <td>${idx+1}</td>
+      <td style="text-align:left;font-weight:600;">${item.nombre}</td>
+      <td style="font-size:11px;color:#888;">${item.codigo || '—'}</td>
+      <td>
+        <input type="number" min="0" value="${item.cantidad}" data-id="${item.id}" data-field="cantidad"
+          style="width:60px;text-align:center;padding:4px;border-radius:5px;border:1px solid #ddd;font-size:13px;"
+          onchange="editItem(this)"/>
+      </td>
+      <td>
+        <input type="number" min="0" step="0.01" value="${item.precio}" data-id="${item.id}" data-field="precio"
+          style="width:80px;text-align:center;padding:4px;border-radius:5px;border:1px solid #ddd;font-size:13px;"
+          onchange="editItem(this)"/>
+      </td>
+      <td>
+        <button class="btn sm" style="background:#c00;" onclick="delItem('${item.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+function editItem(inp) {
+  const item = db.inventario.find(i => i.id === inp.dataset.id);
+  if (!item) return;
+  item[inp.dataset.field] = Number(inp.value);
+  wsSend({ t: 'inv_update', item });
+}
+
+function delItem(id) {
+  if (!confirm('¿Eliminar producto?')) return;
+  db.inventario = db.inventario.filter(i => i.id !== id);
+  wsSend({ t: 'inv_delete', id });
+  renderInv(); renderVentaSelect();
+}
+
+document.getElementById('btnAddInv').onclick = () => {
+  const nom    = document.getElementById('invNom').value.trim();
+  const cant   = Number(document.getElementById('invCant').value);
+  const precio = Number(document.getElementById('invPrecio').value);
+  const cod    = document.getElementById('invCod').value.trim();
+  if (!nom) { toast('⚠ Ingresa un nombre'); return; }
+
+  const existente = db.inventario.find(i => i.nombre.toLowerCase() === nom.toLowerCase());
+  if (existente) {
+    existente.cantidad += cant;
+    if (precio > 0) existente.precio = precio;
+    if (cod) existente.codigo = cod;
+    wsSend({ t: 'inv_update', item: existente });
+    renderInv(); renderVentaSelect();
+    toast(`✅ Stock actualizado: ${nom}`);
+  } else {
+    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod };
+    db.inventario.push(item);
+    wsSend({ t: 'inv_add', item });
+    renderInv(); renderVentaSelect();
+    toast(`✅ Agregado: ${nom}`);
+  }
+  document.getElementById('invNom').value = '';
+  document.getElementById('invCant').value = 1;
+  document.getElementById('invPrecio').value = 0;
+  document.getElementById('invCod').value = '';
+};
+
+document.getElementById('fNom').oninput = renderInv;
+document.getElementById('fCantMin').oninput = renderInv;
+document.getElementById('btnFiltroOff').onclick = () => {
+  document.getElementById('fNom').value = '';
+  document.getElementById('fCantMin').value = '';
+  renderInv();
+};
+
+document.getElementById('btnLimpiarInv').onclick = () => {
+  if (!confirm('¿Eliminar TODO el inventario?')) return;
+  db.inventario = [];
+  wsSend({ t: 'sync_datos', datos: db });
+  renderAll();
+};
+
+document.getElementById('btnExportCSV').onclick = () => {
+  const rows = [['Nombre','Codigo','Stock','Precio']];
+  db.inventario.forEach(i => rows.push([i.nombre, i.codigo||'', i.cantidad, i.precio]));
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+    download: `inventario_${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click();
+};
+
+// ════════════════════════════════════════════════════════
+//  VENTAS
+// ════════════════════════════════════════════════════════
+function renderVentaSelect() {
+  const sel = document.getElementById('selProd');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Seleccionar producto —</option>' +
+    db.inventario.filter(i => i.cantidad > 0)
+      .map(i => `<option value="${i.id}">${i.nombre} (${i.cantidad}) — ${money(i.precio)}</option>`)
+      .join('');
+  sel.value = prev;
+}
+
+function renderCart() {
+  const c = document.getElementById('cart');
+  if (!carrito.length) { c.innerHTML = '<p class="sub" style="text-align:center;padding:8px;">Carrito vacío</p>'; }
+  else c.innerHTML = carrito.map((ci, idx) => `
+    <div class="cart-item">
+      <span style="flex:1;text-align:left;">${ci.nombre}</span>
+      <span style="margin:0 8px;">${ci.cant} × ${money(ci.precio)}</span>
+      <button class="btn sm" style="background:#c00;" onclick="quitarCart(${idx})">✕</button>
+    </div>`).join('');
+  const tot = carrito.reduce((s, ci) => s + ci.cant * ci.precio, 0);
+  document.getElementById('totalVenta').textContent = money(tot);
+}
+
+function quitarCart(idx) {
+  carrito.splice(idx, 1);
+  renderCart();
+}
+
+function agregarProductoCarrito(prod, cant) {
+  if (!prod) return false;
+  const existe = carrito.find(ci => ci.id === prod.id);
+  const enCarrito = existe ? existe.cant : 0;
+  if (enCarrito + cant > prod.cantidad) {
+    toast(`⚠ Stock insuficiente para ${prod.nombre} (disponible: ${prod.cantidad})`);
+    return false;
+  }
+  if (existe) { existe.cant += cant; }
+  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio: prod.precio }); }
+  renderCart();
+  return true;
+}
+
+document.getElementById('btnAddCart').onclick = () => {
+  const id   = document.getElementById('selProd').value;
+  const cant = Number(document.getElementById('ventaCant').value) || 1;
+  const prod = db.inventario.find(i => i.id === id);
+  if (!prod) { toast('⚠ Selecciona un producto'); return; }
+  agregarProductoCarrito(prod, cant);
+};
+
+// ════════════════════════════════════════════════════════
+//  ESCÁNER EN VENTAS — Zebra dispara → se agrega al carrito
+// ════════════════════════════════════════════════════════
+let ventaScanActivo = false;
+let _ventaScanTimer = null;
+const campoScanVenta = document.getElementById('campoScanVenta');
+
+function encenderScanVenta() {
+  ventaScanActivo = true;
+  document.getElementById('ventaScanStatus').style.display = 'flex';
+  campoScanVenta.style.display = 'block';
+  document.getElementById('btnVentaScanOn').style.display = 'none';
+  document.getElementById('btnVentaScanOff').style.display = 'inline-block';
+  campoScanVenta.value = '';
+  campoScanVenta.removeAttribute('readonly');
+  campoScanVenta.focus();
+}
+
+function apagarScanVenta() {
+  ventaScanActivo = false;
+  document.getElementById('ventaScanStatus').style.display = 'none';
+  campoScanVenta.style.display = 'none';
+  document.getElementById('btnVentaScanOn').style.display = 'inline-block';
+  document.getElementById('btnVentaScanOff').style.display = 'none';
+  campoScanVenta.setAttribute('readonly', true);
+}
+
+document.getElementById('btnVentaScanOn').onclick  = encenderScanVenta;
+document.getElementById('btnVentaScanOff').onclick = apagarScanVenta;
+
+campoScanVenta.onclick = function() {
+  this.removeAttribute('readonly');
+  this.focus();
+};
+
+function procesarCodigoVenta(codigo) {
+  if (navigator.vibrate) navigator.vibrate(80);
+  const prod = db.inventario.find(i => (i.codigo && i.codigo === codigo) || i.nombre.toLowerCase() === codigo.toLowerCase());
+  if (!prod) { toast(`⚠ Código ${codigo} no está registrado en inventario`); return; }
+  const agregado = agregarProductoCarrito(prod, 1);
+  if (agregado) toast(`✅ ${prod.nombre} agregado al carrito`);
+}
+
+campoScanVenta.addEventListener('input', function() {
+  clearTimeout(_ventaScanTimer);
+  _ventaScanTimer = setTimeout(() => {
+    const cod = this.value.trim();
+    this.value = '';
+    if (cod.length > 2) {
+      wsSend({ t: 'scan_venta', codigo: cod, ts: Date.now() });
+      procesarCodigoVenta(cod);
+    }
+  }, 120);
+});
+
+campoScanVenta.addEventListener('keydown', function(e) {
+  if (!ventaScanActivo) return;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    clearTimeout(_ventaScanTimer);
+    const cod = this.value.trim();
+    this.value = '';
+    if (cod.length > 2) {
+      wsSend({ t: 'scan_venta', codigo: cod, ts: Date.now() });
+      procesarCodigoVenta(cod);
+    }
+  }
+});
+
+// Mantener foco mientras el escáner de ventas está activo
+document.addEventListener('click', function(e) {
+  if (!ventaScanActivo) return;
+  const tag = e.target.tagName;
+  if (!['INPUT','BUTTON','SELECT','TEXTAREA','A'].includes(tag)) {
+    campoScanVenta.removeAttribute('readonly');
+    campoScanVenta.focus();
+  }
+});
+
+document.getElementById('btnLimpiarCart').onclick = () => { carrito = []; renderCart(); };
+
+document.getElementById('btnVender').onclick = () => {
+  if (!carrito.length) { toast('⚠ Carrito vacío'); return; }
+  const total = carrito.reduce((s, ci) => s + ci.cant * ci.precio, 0);
+  const venta = {
+    id: uid(), fecha: new Date().toISOString(),
+    factura: db.numeroFactura, items: carrito.map(ci=>({...ci})), total
+  };
+  db.ventas.push(venta);
+  db.numeroFactura++;
+  carrito.forEach(ci => {
+    const p = db.inventario.find(i => i.id === ci.id);
+    if (p) p.cantidad = Math.max(0, p.cantidad - ci.cant);
+  });
+  wsSend({ t: 'venta', venta, numeroFactura: db.numeroFactura });
+  carrito = [];
+  renderAll();
+  toast(`✅ Venta #${venta.factura} — ${money(total)}`);
+};
+
+function renderHist() {
+  const h = document.getElementById('histVentas');
+  if (!db.ventas.length) { h.innerHTML = '<p class="sub">Sin ventas</p>'; return; }
+  const ultimas = [...db.ventas].reverse().slice(0, 20);
+  h.innerHTML = `<table>
+    <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Total</th></tr></thead>
+    <tbody>${ultimas.map(v => `
+      <tr>
+        <td>${v.factura}</td>
+        <td>${new Date(v.fecha).toLocaleDateString('es-CO')}</td>
+        <td>${v.items.map(i=>i.nombre).join(', ').slice(0,40)}</td>
+        <td>${money(v.total)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  ESCÁNER — ZEBRA MC9300
+// ════════════════════════════════════════════════════════
+function encendeScan() {
+  scanActivo = true;
+  document.getElementById('scanStatus').style.display = 'flex';
+  document.getElementById('scanField').style.display = 'block';
+  document.getElementById('btnScanOn').style.display = 'none';
+  document.getElementById('btnScanOff').style.display = 'inline-block';
+  const f = document.getElementById('campoScan');
+  f.value = '';
+  f.removeAttribute('readonly');
+  f.focus();
+}
+
+function apagaScan() {
+  scanActivo = false;
+  document.getElementById('scanStatus').style.display = 'none';
+  document.getElementById('scanField').style.display = 'none';
+  document.getElementById('btnScanOn').style.display = 'inline-block';
+  document.getElementById('btnScanOff').style.display = 'none';
+  document.getElementById('campoScan').setAttribute('readonly', true);
+}
+
+document.getElementById('btnScanOn').onclick  = encendeScan;
+document.getElementById('btnScanOff').onclick = apagaScan;
+
+document.getElementById('btnScanClear').onclick = () => {
+  document.getElementById('scanRes').style.display = 'none';
+  document.getElementById('scanExiste').style.display = 'none';
+  document.getElementById('scanNuevo').style.display = 'none';
+  document.getElementById('campoScan').value = '';
+};
+
+// Click en el campo → mantiene foco
+document.getElementById('campoScan').onclick = function() {
+  this.removeAttribute('readonly');
+  this.focus();
+};
+
+// ── Recepción del código desde la Zebra ──────────────────
+// Estrategia dual: evento input + keydown Enter
+// La Zebra MC9300 llena el campo y envía Enter automáticamente
+
+const campoScan = document.getElementById('campoScan');
+
+campoScan.addEventListener('input', function() {
+  if (!scanActivo) return;
+  clearTimeout(_scanTimer);
+  _scanTimer = setTimeout(() => {
+    const cod = this.value.trim();
+    this.value = '';
+    if (cod.length > 2) {
+      // PRIMERO enviar al PC (si estamos en Zebra)
+      wsSend({ t: 'scan', codigo: cod, ts: Date.now() });
+      // LUEGO procesar localmente
+      procesarCodigo(cod);
+    }
+  }, 120); // 120ms: suficiente para láser, no espera teclado humano lento
+});
+
+campoScan.addEventListener('keydown', function(e) {
+  if (!scanActivo) return;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    clearTimeout(_scanTimer);
+    const cod = this.value.trim();
+    this.value = '';
+    if (cod.length > 2) {
+      wsSend({ t: 'scan', codigo: cod, ts: Date.now() });
+      procesarCodigo(cod);
+    }
+  }
+});
+
+// Mantener foco en el campo mientras el escáner está activo
+document.addEventListener('click', function(e) {
+  if (!scanActivo) return;
+  const tag = e.target.tagName;
+  if (!['INPUT','BUTTON','SELECT','TEXTAREA','A'].includes(tag)) {
+    campoScan.removeAttribute('readonly');
+    campoScan.focus();
+  }
+});
+
+document.getElementById('btnBuscarManual').onclick = () => {
+  const cod = campoScan.value.trim();
+  if (!cod) { toast('⚠ Escribe o escanea un código'); return; }
+  campoScan.value = '';
+  wsSend({ t: 'scan', codigo: cod, ts: Date.now() });
+  procesarCodigo(cod);
+};
+
+function procesarCodigo(codigo) {
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  const res = document.getElementById('scanRes');
+  res.style.display = 'block';
+
+  const prod = db.inventario.find(i =>
+    i.codigo && i.codigo === codigo ||
+    i.nombre.toLowerCase() === codigo.toLowerCase()
+  );
+
+  if (prod) {
+    res.innerHTML = `<div class="scan-ok">✅ <strong>${codigo}</strong> → <strong>${prod.nombre}</strong></div>`;
+    document.getElementById('scanExiste').style.display = 'block';
+    document.getElementById('scanNuevo').style.display = 'none';
+    document.getElementById('scanExisteInfo').innerHTML =
+      `<strong>${prod.nombre}</strong> &nbsp;|&nbsp; Stock: <strong>${prod.cantidad}</strong> &nbsp;|&nbsp; Precio: <strong>${money(prod.precio)}</strong>`;
+    document.getElementById('scanExCant').value = 1;
+    document.getElementById('scanExPrecio').value = 0;
+    document.getElementById('btnScanGuardar').onclick = () => guardarExistente(prod.id);
+  } else {
+    res.innerHTML = `<div class="scan-nf">⚠️ Código <strong>${codigo}</strong> no está en inventario</div>`;
+    document.getElementById('scanExiste').style.display = 'none';
+    document.getElementById('scanNuevo').style.display = 'block';
+    document.getElementById('scanNuevoCod').value = codigo;
+    document.getElementById('scanNuevoNom').value = '';
+    document.getElementById('scanNuevoCant').value = 1;
+    document.getElementById('scanNuevoPrecio').value = 0;
+    document.getElementById('scanNuevoNom').focus();
+  }
+
+  // Historial sesión
+  const hora = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  scanHist.unshift({ codigo, nombre: prod ? prod.nombre : '(nuevo)', hora });
+  if (scanHist.length > 50) scanHist.pop();
+  renderScanHist();
+}
+
+function guardarExistente(prodId) {
+  const prod = db.inventario.find(i => i.id === prodId);
+  if (!prod) return;
+  const cant   = Number(document.getElementById('scanExCant').value) || 0;
+  const precio = Number(document.getElementById('scanExPrecio').value);
+  if (cant < 0) { toast('⚠ Cantidad inválida'); return; }
+  prod.cantidad += cant;
+  if (precio > 0) prod.precio = precio;
+  wsSend({ t: 'inv_update', item: prod });
+  renderInv(); renderVentaSelect();
+  toast(`✅ ${prod.nombre}: +${cant} uds. Stock: ${prod.cantidad}`);
+  document.getElementById('scanExiste').style.display = 'none';
+  document.getElementById('scanRes').style.display = 'none';
+}
+
+document.getElementById('btnScanRegistrar').onclick = () => {
+  const cod    = document.getElementById('scanNuevoCod').value.trim();
+  const nom    = document.getElementById('scanNuevoNom').value.trim();
+  const cant   = Number(document.getElementById('scanNuevoCant').value);
+  const precio = Number(document.getElementById('scanNuevoPrecio').value);
+  if (!nom) { toast('⚠ Ingresa el nombre'); return; }
+  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod };
+  db.inventario.push(item);
+  wsSend({ t: 'inv_add', item });
+  renderInv(); renderVentaSelect();
+  toast(`✅ Registrado: ${nom}`);
+  document.getElementById('scanNuevo').style.display = 'none';
+  document.getElementById('scanRes').style.display = 'none';
+};
+
+function renderScanHist() {
+  document.getElementById('scanCount').textContent = scanHist.length + ' escaneos';
+  const h = document.getElementById('scanHist');
+  if (!scanHist.length) { h.innerHTML = '<span style="color:#aaa;font-size:12px;">Sin escaneos aún.</span>'; return; }
+  h.innerHTML = scanHist.map(e =>
+    `<div class="hist-item">
+      <span style="color:#888">${e.hora}</span> &nbsp;
+      <strong>${e.nombre}</strong>
+      <span style="color:#aaa;font-size:11px;"> (${e.codigo})</span>
+    </div>`
+  ).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  RESUMEN DIARIO
+// ════════════════════════════════════════════════════════
+function renderResumen() {
+  const hoy = new Date().toDateString();
+  const ventasHoy = db.ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
+  const totalHoy  = ventasHoy.reduce((s, v) => s + v.total, 0);
+  const unidsHoy  = ventasHoy.reduce((s, v) => s + v.items.reduce((ss, i) => ss + i.cant, 0), 0);
+  const stockBajo = db.inventario.filter(i => i.cantidad <= 3);
+
+  document.getElementById('resContent').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat"><div class="lbl">Ventas hoy</div><div class="val">${ventasHoy.length}</div></div>
+      <div class="stat"><div class="lbl">Total hoy</div><div class="val">${money(totalHoy)}</div></div>
+      <div class="stat"><div class="lbl">Unidades vendidas</div><div class="val">${unidsHoy}</div></div>
+      <div class="stat"><div class="lbl">Productos en inventario</div><div class="val">${db.inventario.length}</div></div>
+    </div>
+    ${stockBajo.length ? `
+    <div class="panel" style="border-left:4px solid #e08000;">
+      <h3 style="color:#a05000;margin-bottom:8px;">⚠ Stock bajo (≤ 3 unidades)</h3>
+      ${stockBajo.map(i => `<div style="padding:4px 0;font-size:13px;"><strong>${i.nombre}</strong> — ${i.cantidad} uds.</div>`).join('')}
+    </div>` : ''}
+    <div class="panel">
+      <h3 style="margin-bottom:8px;">Ventas de hoy</h3>
+      ${ventasHoy.length ? `
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>Hora</th><th>Productos</th><th>Total</th></tr></thead>
+        <tbody>${ventasHoy.map(v => `
+          <tr>
+            <td>${v.factura}</td>
+            <td>${new Date(v.fecha).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
+            <td style="text-align:left;">${v.items.map(i=>i.nombre).join(', ').slice(0,50)}</td>
+            <td>${money(v.total)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>` : '<p class="sub">Sin ventas hoy</p>'}
+    </div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER GENERAL
+// ════════════════════════════════════════════════════════
+function renderAll() {
+  renderInv();
+  renderVentaSelect();
+  renderCart();
+  renderHist();
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+loginInit();
+</script>
+</body>
+</html>
