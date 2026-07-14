@@ -1,0 +1,16 @@
+{
+  "name": "farmacontrol",
+  "version": "4.0.0",
+  "description": "FarmaControl - Sistema de Inventario y Facturacion para Drogerias",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "pg": "^8.11.5"
+  }
+}
