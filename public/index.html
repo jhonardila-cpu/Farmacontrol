@@ -244,18 +244,23 @@ tr:hover td{background:var(--surface-2);}
       <div class="fi">
         <input id="invNom" type="text" placeholder="Nombre del medicamento" style="flex:2;min-width:160px;"/>
         <input id="invCant" type="number" min="0" value="1" placeholder="Cant." style="width:80px;"/>
+        <select id="invUnidad" style="width:100px;">
+          <option value="Unidad">Unidad</option>
+          <option value="Sobre">Sobre</option>
+          <option value="Caja">Caja</option>
+        </select>
         <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio" style="width:110px;"/>
         <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
         <button class="btn b" id="btnAddInv">➕ Agregar</button>
       </div>
       <div class="fi" style="margin-bottom:8px;">
-        <input id="fNom" type="text" placeholder="🔍 Buscar..." style="flex:1;min-width:120px;"/>
+        <input id="fNom" type="text" placeholder="🔍 Buscar por nombre o escanear código..." style="flex:1;min-width:120px;"/>
         <input id="fCantMin" type="number" placeholder="Stock mín" style="width:90px;"/>
         <button class="btn b sm" id="btnFiltroOff">Limpiar</button>
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Unidad</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
           <tbody id="tbInv"></tbody>
         </table>
       </div>
@@ -294,6 +299,10 @@ tr:hover td{background:var(--surface-2);}
         </div>
         <div id="cart"></div>
         <div class="total-row"><span>Total:</span><span id="totalVenta">$0</span></div>
+        <div id="reciboUltimaVenta" style="display:none;align-items:center;justify-content:space-between;gap:8px;background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:var(--r-sm);padding:8px 10px;margin-top:8px;">
+          <span style="font-size:12px;font-weight:700;color:var(--ok);"></span>
+          <button class="btn sm gold" id="btnDescargarReciboUltima">🧾 Descargar recibo</button>
+        </div>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
           <button class="btn gold" id="btnVender" style="flex:1;">✅ Confirmar venta</button>
           <button class="btn gr sm" id="btnLimpiarCart">🗑</button>
@@ -371,6 +380,12 @@ tr:hover td{background:var(--surface-2);}
           <input id="scanNuevoNom" type="text" placeholder="Ej: Paracetamol 500mg x10"/>
           <label>Cantidad inicial:</label>
           <input id="scanNuevoCant" type="number" min="1" value="1"/>
+          <label>Unidad de venta:</label>
+          <select id="scanNuevoUnidad">
+            <option value="Unidad">Unidad</option>
+            <option value="Sobre">Sobre</option>
+            <option value="Caja">Caja</option>
+          </select>
           <label>Precio unitario ($):</label>
           <input id="scanNuevoPrecio" type="number" min="0" step="0.01" value="0"/>
           <button class="btn gold" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
@@ -625,11 +640,11 @@ function toast(msg, tipo) {
 //  INVENTARIO
 // ════════════════════════════════════════════════════════
 function renderInv() {
-  const fNom  = (document.getElementById('fNom').value||'').toLowerCase();
+  const fNom  = (document.getElementById('fNom').value||'').toLowerCase().trim();
   const fCant = Number(document.getElementById('fCantMin').value) || 0;
 
   const lista = db.inventario.filter(i =>
-    i.nombre.toLowerCase().includes(fNom) &&
+    (i.nombre.toLowerCase().includes(fNom) || (i.codigo||'').toLowerCase().includes(fNom)) &&
     i.cantidad >= fCant
   );
 
@@ -637,7 +652,7 @@ function renderInv() {
   if (!lista.length) {
     if (!db.inventario.length) {
       // Inventario totalmente vacío — onboarding
-      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
+      tb.innerHTML = `<tr><td colspan="7" style="padding:0;border:none;">
         <div class="empty-state">
           <div class="ico">📦</div>
           <div class="msg">Aún no tienes productos</div>
@@ -646,7 +661,7 @@ function renderInv() {
       </td></tr>`;
     } else {
       // Hay inventario, pero el filtro no encontró nada
-      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
+      tb.innerHTML = `<tr><td colspan="7" style="padding:0;border:none;">
         <div class="empty-state">
           <div class="ico">🔍</div>
           <div class="msg">Sin resultados para ese filtro</div>
@@ -662,6 +677,13 @@ function renderInv() {
       <td>${idx+1}</td>
       <td style="text-align:left;font-weight:600;">${item.nombre}</td>
       <td style="font-size:11px;color:var(--ink-mute);">${item.codigo || '—'}</td>
+      <td>
+        <select data-id="${item.id}" data-field="unidad" onchange="editUnidad(this)" style="padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:12px;">
+          <option value="Unidad" ${(!item.unidad||item.unidad==='Unidad')?'selected':''}>Unidad</option>
+          <option value="Sobre" ${item.unidad==='Sobre'?'selected':''}>Sobre</option>
+          <option value="Caja" ${item.unidad==='Caja'?'selected':''}>Caja</option>
+        </select>
+      </td>
       <td>
         <input type="number" min="0" value="${item.cantidad}" data-id="${item.id}" data-field="cantidad"
           style="width:60px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
@@ -685,6 +707,15 @@ function editItem(inp) {
   wsSend({ t: 'inv_update', item });
 }
 
+function editUnidad(sel) {
+  const item = db.inventario.find(i => i.id === sel.dataset.id);
+  if (!item) return;
+  item.unidad = sel.value;
+  wsSend({ t: 'inv_update', item });
+  renderVentaSelect();
+  toast(`✅ ${item.nombre}: unidad = ${sel.value}`);
+}
+
 function delItem(id) {
   if (miRol !== 'admin') { toast('⛔ Solo el administrador puede eliminar productos', 'err'); return; }
   if (!confirm('¿Eliminar producto?')) return;
@@ -696,6 +727,7 @@ function delItem(id) {
 document.getElementById('btnAddInv').onclick = () => {
   const nom    = document.getElementById('invNom').value.trim();
   const cant   = Number(document.getElementById('invCant').value);
+  const unidad = document.getElementById('invUnidad').value;
   const precio = Number(document.getElementById('invPrecio').value);
   const cod    = document.getElementById('invCod').value.trim();
   if (!nom) { toast('⚠ Ingresa un nombre'); return; }
@@ -705,11 +737,12 @@ document.getElementById('btnAddInv').onclick = () => {
     existente.cantidad += cant;
     if (precio > 0) existente.precio = precio;
     if (cod) existente.codigo = cod;
+    existente.unidad = unidad;
     wsSend({ t: 'inv_update', item: existente });
     renderInv(); renderVentaSelect();
     toast(`✅ Stock actualizado: ${nom}`);
   } else {
-    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod };
+    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod, unidad };
     db.inventario.push(item);
     wsSend({ t: 'inv_add', item });
     renderInv(); renderVentaSelect();
@@ -719,9 +752,13 @@ document.getElementById('btnAddInv').onclick = () => {
   document.getElementById('invCant').value = 1;
   document.getElementById('invPrecio').value = 0;
   document.getElementById('invCod').value = '';
+  document.getElementById('invUnidad').value = 'Unidad';
 };
 
 document.getElementById('fNom').oninput = renderInv;
+document.getElementById('fNom').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); e.target.select(); }
+});
 document.getElementById('fCantMin').oninput = renderInv;
 document.getElementById('btnFiltroOff').onclick = () => {
   document.getElementById('fNom').value = '';
@@ -740,8 +777,8 @@ document.getElementById('btnLimpiarInv').onclick = () => {
 };
 
 document.getElementById('btnExportCSV').onclick = () => {
-  const rows = [['Nombre','Codigo','Stock','Precio']];
-  db.inventario.forEach(i => rows.push([i.nombre, i.codigo||'', i.cantidad, i.precio]));
+  const rows = [['Nombre','Codigo','Unidad','Stock','Precio']];
+  db.inventario.forEach(i => rows.push([i.nombre, i.codigo||'', i.unidad||'Unidad', i.cantidad, i.precio]));
   const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const a = Object.assign(document.createElement('a'), {
     href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
@@ -781,9 +818,16 @@ function renderVentaSelect() {
   const prev = sel.value;
   sel.innerHTML = '<option value="">— Seleccionar producto —</option>' +
     db.inventario.filter(i => i.cantidad > 0)
-      .map(i => `<option value="${i.id}">${i.nombre} (${i.cantidad}) — ${money(i.precio)}</option>`)
+      .map(i => `<option value="${i.id}">${i.nombre} — ${i.unidad||'Unidad'} (${i.cantidad}) — ${money(i.precio)}</option>`)
       .join('');
   sel.value = prev;
+}
+
+function plural(unidad, cant) {
+  if (cant === 1) return unidad || 'Unidad';
+  const u = unidad || 'Unidad';
+  if (u === 'Unidad') return 'Unidades';
+  return u + 's'; // Sobre→Sobres, Caja→Cajas
 }
 
 function renderCart() {
@@ -792,7 +836,7 @@ function renderCart() {
   else c.innerHTML = carrito.map((ci, idx) => `
     <div class="cart-item">
       <span style="flex:1;text-align:left;">${ci.nombre}</span>
-      <span style="margin:0 8px;">${ci.cant} × ${money(ci.precio)}</span>
+      <span style="margin:0 8px;">${ci.cant} ${plural(ci.unidad, ci.cant)} × ${money(ci.precio)}</span>
       <button class="btn sm" style="background:var(--err);color:#fff;" onclick="quitarCart(${idx})">✕</button>
     </div>`).join('');
   const tot = carrito.reduce((s, ci) => s + ci.cant * ci.precio, 0);
@@ -806,6 +850,10 @@ function quitarCart(idx) {
 
 function agregarProductoCarrito(prod, cant) {
   if (!prod) return false;
+  if (!carrito.length) {
+    const cont = document.getElementById('reciboUltimaVenta');
+    if (cont) cont.style.display = 'none';
+  }
   const existe = carrito.find(ci => ci.id === prod.id);
   const enCarrito = existe ? existe.cant : 0;
   if (enCarrito + cant > prod.cantidad) {
@@ -813,7 +861,7 @@ function agregarProductoCarrito(prod, cant) {
     return false;
   }
   if (existe) { existe.cant += cant; }
-  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio: prod.precio }); }
+  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio: prod.precio, unidad: prod.unidad || 'Unidad' }); }
   renderCart();
   return true;
 }
@@ -864,7 +912,14 @@ campoScanVenta.onclick = function() {
 function procesarCodigoVenta(codigo) {
   if (navigator.vibrate) navigator.vibrate(80);
   const prod = db.inventario.find(i => (i.codigo && i.codigo === codigo) || i.nombre.toLowerCase() === codigo.toLowerCase());
-  if (!prod) { toast(`⚠ Código ${codigo} no está registrado en inventario`); return; }
+  if (!prod) {
+    toast(`🆕 Código ${codigo} no existe — te llevo a registrarlo`, 'warn');
+    apagarScanVenta();
+    irSec('scan');
+    encendeScan();
+    procesarCodigo(codigo);
+    return;
+  }
   const agregado = agregarProductoCarrito(prod, 1);
   if (agregado) toast(`✅ ${prod.nombre} agregado al carrito`);
 }
@@ -905,7 +960,12 @@ document.addEventListener('click', function(e) {
   }
 });
 
-document.getElementById('btnLimpiarCart').onclick = () => { carrito = []; renderCart(); };
+document.getElementById('btnLimpiarCart').onclick = () => {
+  carrito = [];
+  renderCart();
+  const cont = document.getElementById('reciboUltimaVenta');
+  if (cont) cont.style.display = 'none';
+};
 
 document.getElementById('btnVender').onclick = () => {
   if (!carrito.length) { toast('⚠ Carrito vacío'); return; }
@@ -924,8 +984,22 @@ document.getElementById('btnVender').onclick = () => {
   carrito = [];
   renderAll();
   toast(`✅ Venta #${venta.factura} — ${money(total)}`);
-  generarReciboPDF(venta);
+  mostrarBotonRecibo(venta);
 };
+
+// El recibo NUNCA se descarga solo — queda disponible en un botón hasta que el
+// usuario decida bajarlo, o se puede volver a generar después desde el historial.
+let ultimaVentaRecibo = null;
+function mostrarBotonRecibo(venta) {
+  ultimaVentaRecibo = venta;
+  const cont = document.getElementById('reciboUltimaVenta');
+  if (!cont) return;
+  cont.style.display = 'flex';
+  cont.querySelector('span').textContent = `Venta #${venta.factura} confirmada — ${money(venta.total)}`;
+}
+document.getElementById('btnDescargarReciboUltima')?.addEventListener('click', () => {
+  if (ultimaVentaRecibo) generarReciboPDF(ultimaVentaRecibo);
+});
 
 // ════════════════════════════════════════════════════════
 //  RECIBO PDF — comprobante de venta (no es factura electrónica DIAN)
@@ -957,7 +1031,7 @@ function generarReciboPDF(venta) {
     venta.items.forEach(it => {
       const nombreCorto = it.nombre.length > 30 ? it.nombre.slice(0, 30) + '…' : it.nombre;
       doc.text(nombreCorto, 5, y); y += 3.6;
-      doc.text(`${it.cant} x ${money(it.precio)}`, 5, y);
+      doc.text(`${it.cant} ${plural(it.unidad, it.cant)} x ${money(it.precio)}`, 5, y);
       doc.text(money(it.cant * it.precio), 75, y, { align: 'right' });
       y += 5.2;
     });
@@ -1114,6 +1188,7 @@ function procesarCodigo(codigo) {
     document.getElementById('scanNuevoCod').value = codigo;
     document.getElementById('scanNuevoNom').value = '';
     document.getElementById('scanNuevoCant').value = 1;
+    document.getElementById('scanNuevoUnidad').value = 'Unidad';
     document.getElementById('scanNuevoPrecio').value = 0;
     document.getElementById('scanNuevoNom').focus();
   }
@@ -1144,9 +1219,10 @@ document.getElementById('btnScanRegistrar').onclick = () => {
   const cod    = document.getElementById('scanNuevoCod').value.trim();
   const nom    = document.getElementById('scanNuevoNom').value.trim();
   const cant   = Number(document.getElementById('scanNuevoCant').value);
+  const unidad = document.getElementById('scanNuevoUnidad').value;
   const precio = Number(document.getElementById('scanNuevoPrecio').value);
   if (!nom) { toast('⚠ Ingresa el nombre'); return; }
-  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod };
+  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod, unidad };
   db.inventario.push(item);
   wsSend({ t: 'inv_add', item });
   renderInv(); renderVentaSelect();
