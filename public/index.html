@@ -968,7 +968,8 @@ document.getElementById('btnDescargarRespaldo').onclick = async () => {
 //  VENTAS
 // ════════════════════════════════════════════════════════
 function presentacionesDisponibles(prod) {
-  const opts = [{ value: 'Unidad', label: `Unidad — ${money(prod.precio)} c/u` }];
+  const opts = [];
+  if (prod.precio > 0) opts.push({ value: 'Unidad', label: `Unidad — ${money(prod.precio)} c/u` });
   if (prod.precioSobre > 0) opts.push({ value: 'Sobre', label: `Sobre (${prod.unidadesSobre||1}u) — ${money(prod.precioSobre)}` });
   if (prod.precioCaja > 0) opts.push({ value: 'Caja', label: `Caja (${prod.unidadesCaja||1}u) — ${money(prod.precioCaja)}` });
   return opts;
@@ -1000,7 +1001,17 @@ function actualizarSelPresentacion() {
   const selPres = document.getElementById('selPresentacion');
   if (!prod) { selPres.style.display = 'none'; return; }
   const opts = presentacionesDisponibles(prod);
-  if (opts.length <= 1) { selPres.style.display = 'none'; selPres.innerHTML = ''; return; }
+  if (opts.length === 0) {
+    selPres.style.display = 'none'; selPres.innerHTML = '';
+    toast(`⚠ ${prod.nombre} no tiene ningún precio configurado (ni unidad, ni sobre, ni caja)`, 'warn');
+    return;
+  }
+  if (opts.length === 1) {
+    // Solo hay una forma válida de venderlo — se usa directo, sin mostrar el selector
+    selPres.style.display = 'none';
+    selPres.innerHTML = `<option value="${opts[0].value}" selected>${opts[0].label}</option>`;
+    return;
+  }
   selPres.innerHTML = opts.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   selPres.style.display = 'block';
 }
@@ -1061,7 +1072,8 @@ document.getElementById('btnAddCart').onclick = () => {
   const prod = db.inventario.find(i => i.id === id);
   if (!prod) { toast('⚠ Selecciona un producto'); return; }
   const selPres = document.getElementById('selPresentacion');
-  const presentacion = selPres.style.display !== 'none' ? selPres.value : 'Unidad';
+  const presentacion = selPres.value;
+  if (!presentacion) { toast(`⚠ ${prod.nombre} no tiene ningún precio configurado`, 'warn'); return; }
   agregarProductoCarrito(prod, cant, presentacion);
 };
 
@@ -1112,11 +1124,15 @@ function procesarCodigoVenta(codigo) {
     return;
   }
   const opts = presentacionesDisponibles(prod);
+  if (opts.length === 0) {
+    toast(`⚠ ${prod.nombre} no tiene ningún precio configurado — revísalo en Inventario`, 'warn');
+    return;
+  }
   if (opts.length > 1) {
     mostrarElegirPresentacion(prod, opts);
     return;
   }
-  const agregado = agregarProductoCarrito(prod, 1, 'Unidad');
+  const agregado = agregarProductoCarrito(prod, 1, opts[0].value);
   if (agregado) toast(`✅ ${prod.nombre} agregado al carrito`);
 }
 
