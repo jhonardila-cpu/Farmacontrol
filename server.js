@@ -32,11 +32,11 @@ let db = { inventario: [], ventas: [], numeroFactura: 1 };
 function dbDemo() {
   return {
     inventario: [
-      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 20, precio: 320,  codigo: '' },
-      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 12, precio: 420,  codigo: '' },
-      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 5,  precio: 2200, codigo: '' },
-      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,  precio: 1250, codigo: '' },
-      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 15, precio: 580,  codigo: '' }
+      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 20, precio: 320,  codigo: '', unidad: 'Caja' },
+      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 12, precio: 420,  codigo: '', unidad: 'Caja' },
+      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 5,  precio: 2200, codigo: '', unidad: 'Caja' },
+      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,  precio: 1250, codigo: '', unidad: 'Unidad' },
+      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 15, precio: 580,  codigo: '', unidad: 'Sobre' }
     ],
     ventas: [],
     numeroFactura: 1
@@ -62,9 +62,12 @@ async function initPersistencia() {
         nombre   TEXT NOT NULL,
         cantidad NUMERIC NOT NULL DEFAULT 0,
         precio   NUMERIC NOT NULL DEFAULT 0,
-        codigo   TEXT DEFAULT ''
+        codigo   TEXT DEFAULT '',
+        unidad   TEXT DEFAULT 'Unidad'
       );
     `);
+    // Migración segura: si la tabla ya existía de antes (v4 sin unidad), agrega la columna sin borrar nada.
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS unidad TEXT DEFAULT 'Unidad';`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ventas (
         id       TEXT PRIMARY KEY,
@@ -90,8 +93,8 @@ async function initPersistencia() {
       const demo = dbDemo();
       for (const item of demo.inventario) {
         await pool.query(
-          'INSERT INTO inventario (id, nombre, cantidad, precio, codigo) VALUES ($1,$2,$3,$4,$5)',
-          [item.id, item.nombre, item.cantidad, item.precio, item.codigo]
+          'INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidad) VALUES ($1,$2,$3,$4,$5,$6)',
+          [item.id, item.nombre, item.cantidad, item.precio, item.codigo, item.unidad || 'Unidad']
         );
       }
       await pool.query(
@@ -102,7 +105,7 @@ async function initPersistencia() {
       console.log('[DB-PG] Base de datos nueva — datos demo sembrados');
     } else {
       db.inventario = invRows.map(r => ({
-        id: r.id, nombre: r.nombre, cantidad: Number(r.cantidad), precio: Number(r.precio), codigo: r.codigo || ''
+        id: r.id, nombre: r.nombre, cantidad: Number(r.cantidad), precio: Number(r.precio), codigo: r.codigo || '', unidad: r.unidad || 'Unidad'
       }));
       db.ventas = ventaRows.map(r => ({
         id: r.id, fecha: r.fecha.toISOString(), factura: r.factura, items: r.items, total: Number(r.total)
@@ -149,8 +152,8 @@ async function persistirInvAdd(item) {
   if (USE_PG) {
     try {
       await pool.query(
-        'INSERT INTO inventario (id, nombre, cantidad, precio, codigo) VALUES ($1,$2,$3,$4,$5)',
-        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '']
+        'INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidad) VALUES ($1,$2,$3,$4,$5,$6)',
+        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '', item.unidad || 'Unidad']
       );
     } catch (e) { console.error('[DB-PG] Error insertando producto:', e.message); }
   } else guardarJSON();
@@ -160,8 +163,8 @@ async function persistirInvUpdate(item) {
   if (USE_PG) {
     try {
       await pool.query(
-        'UPDATE inventario SET nombre=$2, cantidad=$3, precio=$4, codigo=$5 WHERE id=$1',
-        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '']
+        'UPDATE inventario SET nombre=$2, cantidad=$3, precio=$4, codigo=$5, unidad=$6 WHERE id=$1',
+        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '', item.unidad || 'Unidad']
       );
     } catch (e) { console.error('[DB-PG] Error actualizando producto:', e.message); }
   } else guardarJSON();
