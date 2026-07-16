@@ -299,7 +299,7 @@ tr:hover td{background:var(--surface-2);}
             <input id="invCantCajas" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
           </div>
         </div>
-        <p class="sub" style="margin:0;">= Total que se guardará como stock: <strong id="invTotalUnidades" style="color:var(--brand-dark);font-size:15px;">0</strong> unidades</p>
+        <p class="sub" style="margin:0;">Se guardará: <strong id="invTotalUnidades" style="color:var(--brand-dark);font-size:15px;">0</strong></p>
         <p id="invAvisoConversion" class="sub" style="margin:6px 0 0;color:var(--warn);font-weight:700;display:none;"></p>
       </div>
 
@@ -316,7 +316,7 @@ tr:hover td{background:var(--surface-2);}
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock (unidades)</th><th>Precio x unidad</th><th>Presentaciones</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Existencias</th><th>Precios</th><th>Acciones</th></tr></thead>
           <tbody id="tbInv"></tbody>
         </table>
       </div>
@@ -752,7 +752,7 @@ function renderInv() {
   if (!lista.length) {
     if (!db.inventario.length) {
       // Inventario totalmente vacío — onboarding
-      tb.innerHTML = `<tr><td colspan="7" style="padding:0;border:none;">
+      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
         <div class="empty-state">
           <div class="ico">📦</div>
           <div class="msg">Aún no tienes productos</div>
@@ -761,7 +761,7 @@ function renderInv() {
       </td></tr>`;
     } else {
       // Hay inventario, pero el filtro no encontró nada
-      tb.innerHTML = `<tr><td colspan="7" style="padding:0;border:none;">
+      tb.innerHTML = `<tr><td colspan="6" style="padding:0;border:none;">
         <div class="empty-state">
           <div class="ico">🔍</div>
           <div class="msg">Sin resultados para ese filtro</div>
@@ -777,25 +777,48 @@ function renderInv() {
       <td>${idx+1}</td>
       <td style="text-align:left;font-weight:600;">${item.nombre}</td>
       <td style="font-size:11px;color:var(--ink-mute);">${item.codigo || '—'}</td>
-      <td>
-        <input type="number" min="0" value="${item.cantidad}" data-id="${item.id}" data-field="cantidad"
-          style="width:60px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
-          onchange="editItem(this)"/>
+      <td style="text-align:left;font-size:12px;">
+        ${(item.cantUnidad>0 || item.precio>0) ? `
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+            <span style="min-width:60px;color:var(--ink-mute);">Unidades:</span>
+            <input type="number" min="0" value="${item.cantUnidad||0}" data-id="${item.id}" data-field="cantUnidad"
+              style="width:55px;text-align:center;padding:3px;border-radius:5px;border:1.5px solid var(--line);font-size:12px;"
+              onchange="editBucket(this)"/>
+          </div>` : ''}
+        ${(item.cantSobre>0 || item.precioSobre>0) ? `
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+            <span style="min-width:60px;color:var(--ink-mute);">Sobres:</span>
+            <input type="number" min="0" value="${item.cantSobre||0}" data-id="${item.id}" data-field="cantSobre"
+              style="width:55px;text-align:center;padding:3px;border-radius:5px;border:1.5px solid var(--line);font-size:12px;"
+              onchange="editBucket(this)"/>
+          </div>` : ''}
+        ${(item.cantCaja>0 || item.precioCaja>0) ? `
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="min-width:60px;color:var(--ink-mute);">Cajas:</span>
+            <input type="number" min="0" value="${item.cantCaja||0}" data-id="${item.id}" data-field="cantCaja"
+              style="width:55px;text-align:center;padding:3px;border-radius:5px;border:1.5px solid var(--line);font-size:12px;"
+              onchange="editBucket(this)"/>
+          </div>` : ''}
       </td>
-      <td>
-        <input type="number" min="0" step="0.01" value="${item.precio}" data-id="${item.id}" data-field="precio"
-          style="width:80px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
-          onchange="editItem(this)"/>
-      </td>
-      <td style="font-size:11px;">
-        <button class="btn sm sec" onclick="editarPresentaciones('${item.id}')" title="Configurar precios por sobre/caja">
-          ${item.precioSobre>0 ? `📦${money(item.precioSobre)}/sobre ` : ''}${item.precioCaja>0 ? `📦${money(item.precioCaja)}/caja` : ''}${(!item.precioSobre && !item.precioCaja) ? '➕ Solo se vende por unidad — config. sobre/caja' : ''}
-        </button>
+      <td style="text-align:left;font-size:12px;">
+        ${item.precio>0 ? `<div>Unidad: <input type="number" min="0" step="0.01" value="${item.precio}" data-id="${item.id}" data-field="precio" style="width:75px;text-align:center;padding:3px;border-radius:5px;border:1.5px solid var(--line);font-size:12px;" onchange="editItem(this)"/></div>` : ''}
+        ${item.precioSobre>0 ? `<div style="margin-top:2px;">Sobre: ${money(item.precioSobre)}</div>` : ''}
+        ${item.precioCaja>0 ? `<div style="margin-top:2px;">Caja: ${money(item.precioCaja)}</div>` : ''}
+        <button class="btn sm sec" onclick="editarPresentaciones('${item.id}')" style="margin-top:4px;">⚙️ Config. precios</button>
       </td>
       <td>
         ${miRol === 'admin' ? `<button class="btn sm gr" onclick="delItem('${item.id}')">🗑</button>` : ''}
       </td>
     </tr>`).join('');
+}
+
+function editBucket(inp) {
+  const item = db.inventario.find(i => i.id === inp.dataset.id);
+  if (!item) return;
+  item[inp.dataset.field] = Number(inp.value) || 0;
+  item.cantidad = (item.cantUnidad||0) + (item.cantSobre||0)*(item.unidadesSobre||0) + (item.cantCaja||0)*(item.unidadesCaja||0);
+  wsSend({ t: 'inv_update', item });
+  renderVentaSelect();
 }
 
 function editarPresentaciones(id) {
@@ -849,20 +872,25 @@ function calcularTotalUnidadesForm() {
   const cCajas   = Number(document.getElementById('invCantCajas').value) || 0;
   const uxSobre  = Number(document.getElementById('invUnidSobre').value) || 0;
   const uxCaja   = Number(document.getElementById('invUnidCaja').value) || 0;
-  const total = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
-  document.getElementById('invTotalUnidades').textContent = total;
+  const totalUnidadesBase = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
+
+  const partes = [];
+  if (uSueltas > 0) partes.push(`${uSueltas} unidad${uSueltas===1?'':'es'}`);
+  if (cSobres > 0) partes.push(`${cSobres} sobre${cSobres===1?'':'s'}`);
+  if (cCajas > 0) partes.push(`${cCajas} caja${cCajas===1?'':'s'}`);
+  document.getElementById('invTotalUnidades').textContent = partes.length ? partes.join(' + ') : '0';
 
   const aviso = document.getElementById('invAvisoConversion');
   if (cSobres > 0 && uxSobre === 0) {
     aviso.style.display = 'block';
-    aviso.textContent = '⚠ Pusiste cantidad de sobres, pero falta indicar arriba cuántas unidades trae 1 sobre — si no, no cuenta.';
+    aviso.textContent = 'ℹ Como no indicaste cuántas unidades trae 1 sobre (paso ②), no se podrá calcular el total combinado en unidades sueltas — pero los sobres se guardan igual.';
   } else if (cCajas > 0 && uxCaja === 0) {
     aviso.style.display = 'block';
-    aviso.textContent = '⚠ Pusiste cantidad de cajas, pero falta indicar arriba cuántas unidades trae 1 caja — si no, no cuenta.';
+    aviso.textContent = 'ℹ Como no indicaste cuántas unidades trae 1 caja (paso ②), no se podrá calcular el total combinado en unidades sueltas — pero las cajas se guardan igual.';
   } else {
     aviso.style.display = 'none';
   }
-  return total;
+  return totalUnidadesBase;
 }
 ['invCantUnidades','invCantSobres','invCantCajas','invUnidSobre','invUnidCaja'].forEach(id => {
   document.getElementById(id).addEventListener('input', calcularTotalUnidadesForm);
@@ -876,33 +904,37 @@ document.getElementById('btnAddInv').onclick = () => {
   const precioSobre   = Number(document.getElementById('invPrecioSobre').value) || 0;
   const unidadesCaja  = Number(document.getElementById('invUnidCaja').value) || 0;
   const precioCaja    = Number(document.getElementById('invPrecioCaja').value) || 0;
-  const cant = calcularTotalUnidadesForm();
+  const uSueltas = Number(document.getElementById('invCantUnidades').value) || 0;
+  const cSobres  = Number(document.getElementById('invCantSobres').value) || 0;
+  const cCajas   = Number(document.getElementById('invCantCajas').value) || 0;
   if (!nom) { toast('⚠ Ingresa un nombre'); return; }
-  const cSobres = Number(document.getElementById('invCantSobres').value) || 0;
-  const cCajas  = Number(document.getElementById('invCantCajas').value) || 0;
-  if (cant <= 0 && (cSobres > 0 || cCajas > 0)) {
-    toast('⚠ Falta indicar cuántas unidades trae 1 sobre/caja (arriba en el paso ②) para poder calcular el total', 'warn');
+  if (uSueltas <= 0 && cSobres <= 0 && cCajas <= 0) {
+    toast('⚠ Ingresa cuánto tienes en existencia (unidades, sobres o cajas)', 'warn');
     return;
   }
-  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes en existencia (unidades, sobres o cajas)', 'warn'); return; }
 
   const existente = db.inventario.find(i => i.nombre.toLowerCase() === nom.toLowerCase());
   if (existente) {
-    existente.cantidad += cant;
+    existente.cantUnidad = (existente.cantUnidad || 0) + uSueltas;
+    existente.cantSobre  = (existente.cantSobre || 0) + cSobres;
+    existente.cantCaja   = (existente.cantCaja || 0) + cCajas;
     if (precio > 0) existente.precio = precio;
     if (cod) existente.codigo = cod;
     existente.unidadesSobre = unidadesSobre; existente.precioSobre = precioSobre;
     existente.unidadesCaja  = unidadesCaja;  existente.precioCaja  = precioCaja;
+    existente.cantidad = existente.cantUnidad + existente.cantSobre*unidadesSobre + existente.cantCaja*unidadesCaja;
     wsSend({ t: 'inv_update', item: existente });
     renderInv(); renderVentaSelect();
-    toast(`✅ Stock actualizado: ${nom} (+${cant} unidades)`);
+    toast(`✅ Stock actualizado: ${nom}`);
   } else {
-    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
-      unidadesSobre, precioSobre, unidadesCaja, precioCaja };
+    const cantidad = uSueltas + cSobres*unidadesSobre + cCajas*unidadesCaja;
+    const item = { id: uid(), nombre: nom, cantidad, precio, codigo: cod,
+      unidadesSobre, precioSobre, unidadesCaja, precioCaja,
+      cantUnidad: uSueltas, cantSobre: cSobres, cantCaja: cCajas };
     db.inventario.push(item);
     wsSend({ t: 'inv_add', item });
     renderInv(); renderVentaSelect();
-    toast(`✅ Agregado: ${nom} (${cant} unidades en total)`);
+    toast(`✅ Agregado: ${nom}`);
   }
   document.getElementById('invNom').value = '';
   document.getElementById('invPrecio').value = 0;
@@ -939,8 +971,11 @@ document.getElementById('btnLimpiarInv').onclick = () => {
 };
 
 document.getElementById('btnExportCSV').onclick = () => {
-  const rows = [['Nombre','Codigo','Unidad','Stock','Precio']];
-  db.inventario.forEach(i => rows.push([i.nombre, i.codigo||'', i.unidad||'Unidad', i.cantidad, i.precio]));
+  const rows = [['Nombre','Codigo','Unidades sueltas','Sobres','Cajas','Precio x unidad','Precio x sobre','Precio x caja']];
+  db.inventario.forEach(i => rows.push([
+    i.nombre, i.codigo||'', i.cantUnidad||0, i.cantSobre||0, i.cantCaja||0,
+    i.precio||0, i.precioSobre||0, i.precioCaja||0
+  ]));
   const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
   const a = Object.assign(document.createElement('a'), {
     href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
@@ -977,9 +1012,9 @@ document.getElementById('btnDescargarRespaldo').onclick = async () => {
 // ════════════════════════════════════════════════════════
 function presentacionesDisponibles(prod) {
   const opts = [];
-  if (prod.precio > 0) opts.push({ value: 'Unidad', label: `Unidad — ${money(prod.precio)} c/u` });
-  if (prod.precioSobre > 0) opts.push({ value: 'Sobre', label: `Sobre (${prod.unidadesSobre||1}u) — ${money(prod.precioSobre)}` });
-  if (prod.precioCaja > 0) opts.push({ value: 'Caja', label: `Caja (${prod.unidadesCaja||1}u) — ${money(prod.precioCaja)}` });
+  if (prod.precio > 0) opts.push({ value: 'Unidad', label: `Unidad — ${money(prod.precio)} (${prod.cantUnidad||0} disp.)` });
+  if (prod.precioSobre > 0) opts.push({ value: 'Sobre', label: `Sobre (${prod.unidadesSobre||1}u) — ${money(prod.precioSobre)} (${prod.cantSobre||0} disp.)` });
+  if (prod.precioCaja > 0) opts.push({ value: 'Caja', label: `Caja (${prod.unidadesCaja||1}u) — ${money(prod.precioCaja)} (${prod.cantCaja||0} disp.)` });
   return opts;
 }
 function precioPresentacion(prod, pres) {
@@ -1025,6 +1060,14 @@ function actualizarSelPresentacion() {
 }
 document.getElementById('selProd').addEventListener('change', actualizarSelPresentacion);
 
+function desgloseStock(prod) {
+  const partes = [];
+  if (prod.cantUnidad > 0) partes.push(`${prod.cantUnidad} unidad${prod.cantUnidad===1?'':'es'}`);
+  if (prod.cantSobre > 0) partes.push(`${prod.cantSobre} sobre${prod.cantSobre===1?'':'s'}`);
+  if (prod.cantCaja > 0) partes.push(`${prod.cantCaja} caja${prod.cantCaja===1?'':'s'}`);
+  return partes.length ? partes.join(' + ') : 'Sin existencias';
+}
+
 function plural(pres, cant) {
   const p = pres || 'Unidad';
   if (cant === 1) return p;
@@ -1050,6 +1093,12 @@ function quitarCart(idx) {
   renderCart();
 }
 
+function bucketDisponible(prod, pres) {
+  if (pres === 'Sobre') return prod.cantSobre || 0;
+  if (pres === 'Caja') return prod.cantCaja || 0;
+  return prod.cantUnidad || 0;
+}
+
 function agregarProductoCarrito(prod, cant, presentacion) {
   if (!prod) return false;
   presentacion = presentacion || 'Unidad';
@@ -1057,19 +1106,18 @@ function agregarProductoCarrito(prod, cant, presentacion) {
     const cont = document.getElementById('reciboUltimaVenta');
     if (cont) cont.style.display = 'none';
   }
-  const equiv = unidadesPorPresentacion(prod, presentacion);
   const precio = precioPresentacion(prod, presentacion);
-  // Suma unidades base ya reservadas de este producto en el carrito (sin importar la presentación de cada línea)
-  const unidadesEnCarrito = carrito.filter(ci => ci.id === prod.id)
-    .reduce((s, ci) => s + ci.cant * (ci.unidadesBase || 1), 0);
-  const unidadesNuevas = cant * equiv;
-  if (unidadesEnCarrito + unidadesNuevas > prod.cantidad) {
-    toast(`⚠ Stock insuficiente para ${prod.nombre} (disponible: ${prod.cantidad} unidades)`);
+  const disponible = bucketDisponible(prod, presentacion);
+  // Cuánto de ESA MISMA presentación ya está reservado en el carrito
+  const yaEnCarrito = carrito.filter(ci => ci.id === prod.id && ci.presentacion === presentacion)
+    .reduce((s, ci) => s + ci.cant, 0);
+  if (yaEnCarrito + cant > disponible) {
+    toast(`⚠ Solo tienes ${disponible} ${plural(presentacion, disponible)} de ${prod.nombre} disponibles`, 'warn');
     return false;
   }
   const existe = carrito.find(ci => ci.id === prod.id && ci.presentacion === presentacion);
   if (existe) { existe.cant += cant; }
-  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio, presentacion, unidadesBase: equiv }); }
+  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio, presentacion }); }
   renderCart();
   return true;
 }
@@ -1215,7 +1263,12 @@ document.getElementById('btnVender').onclick = () => {
   db.numeroFactura++;
   carrito.forEach(ci => {
     const p = db.inventario.find(i => i.id === ci.id);
-    if (p) p.cantidad = Math.max(0, p.cantidad - ci.cant * (ci.unidadesBase || 1));
+    if (!p) return;
+    const pres = ci.presentacion || 'Unidad';
+    if (pres === 'Caja') p.cantCaja = Math.max(0, (p.cantCaja||0) - ci.cant);
+    else if (pres === 'Sobre') p.cantSobre = Math.max(0, (p.cantSobre||0) - ci.cant);
+    else p.cantUnidad = Math.max(0, (p.cantUnidad||0) - ci.cant);
+    p.cantidad = (p.cantUnidad||0) + (p.cantSobre||0)*(p.unidadesSobre||0) + (p.cantCaja||0)*(p.unidadesCaja||0);
   });
   wsSend({ t: 'venta', venta, numeroFactura: db.numeroFactura });
   carrito = [];
@@ -1414,7 +1467,7 @@ function procesarCodigo(codigo) {
     document.getElementById('scanExiste').style.display = 'block';
     document.getElementById('scanNuevo').style.display = 'none';
     document.getElementById('scanExisteInfo').innerHTML =
-      `<strong>${prod.nombre}</strong> &nbsp;|&nbsp; Stock: <strong>${prod.cantidad}</strong> unidades &nbsp;|&nbsp; Precio: <strong>${money(prod.precio)}</strong> c/u`;
+      `<strong>${prod.nombre}</strong><br>Existencias: ${desgloseStock(prod)}`;
     document.getElementById('scanExUnidades').value = 0;
     document.getElementById('scanExSobres').value = 0;
     document.getElementById('scanExCajas').value = 0;
@@ -1460,9 +1513,12 @@ function calcularTotalScanExistente(prod) {
   const uSueltas = Number(document.getElementById('scanExUnidades').value) || 0;
   const cSobres  = Number(document.getElementById('scanExSobres').value) || 0;
   const cCajas   = Number(document.getElementById('scanExCajas').value) || 0;
-  const total = uSueltas + (cSobres * (prod.unidadesSobre || 0)) + (cCajas * (prod.unidadesCaja || 0));
-  document.getElementById('scanExTotalUnidades').textContent = total;
-  return total;
+  const partes = [];
+  if (uSueltas > 0) partes.push(`${uSueltas} unidad${uSueltas===1?'':'es'}`);
+  if (cSobres > 0) partes.push(`${cSobres} sobre${cSobres===1?'':'s'}`);
+  if (cCajas > 0) partes.push(`${cCajas} caja${cCajas===1?'':'s'}`);
+  document.getElementById('scanExTotalUnidades').textContent = partes.length ? partes.join(' + ') : '0';
+  return { uSueltas, cSobres, cCajas };
 }
 ['scanExUnidades','scanExSobres','scanExCajas'].forEach(id => {
   document.getElementById(id).addEventListener('input', () => {
@@ -1476,14 +1532,17 @@ function guardarExistente(prodId) {
   const prod = db.inventario.find(i => i.id === prodId);
   if (!prod) return;
   window._prodEnEdicionScan = prodId;
-  const cant   = calcularTotalScanExistente(prod);
+  const { uSueltas, cSobres, cCajas } = calcularTotalScanExistente(prod);
   const precio = Number(document.getElementById('scanExPrecio').value);
-  if (cant <= 0) { toast('⚠ Ingresa cuánto entró (unidades, sobres o cajas)'); return; }
-  prod.cantidad += cant;
+  if (uSueltas <= 0 && cSobres <= 0 && cCajas <= 0) { toast('⚠ Ingresa cuánto entró (unidades, sobres o cajas)', 'warn'); return; }
+  prod.cantUnidad = (prod.cantUnidad||0) + uSueltas;
+  prod.cantSobre  = (prod.cantSobre||0) + cSobres;
+  prod.cantCaja   = (prod.cantCaja||0) + cCajas;
+  prod.cantidad = prod.cantUnidad + prod.cantSobre*(prod.unidadesSobre||0) + prod.cantCaja*(prod.unidadesCaja||0);
   if (precio > 0) prod.precio = precio;
   wsSend({ t: 'inv_update', item: prod });
   renderInv(); renderVentaSelect();
-  toast(`✅ ${prod.nombre}: +${cant} unidades. Stock: ${prod.cantidad}`);
+  toast(`✅ ${prod.nombre}: existencias actualizadas`);
   document.getElementById('scanExiste').style.display = 'none';
   document.getElementById('scanRes').style.display = 'none';
 }
@@ -1492,11 +1551,12 @@ function calcularTotalScanNuevo() {
   const uSueltas = Number(document.getElementById('scanNuevoCantUnidades').value) || 0;
   const cSobres  = Number(document.getElementById('scanNuevoCantSobres').value) || 0;
   const cCajas   = Number(document.getElementById('scanNuevoCantCajas').value) || 0;
-  const uxSobre  = Number(document.getElementById('scanNuevoUnidSobre').value) || 0;
-  const uxCaja   = Number(document.getElementById('scanNuevoUnidCaja').value) || 0;
-  const total = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
-  document.getElementById('scanNuevoTotalUnidades').textContent = total;
-  return total;
+  const partes = [];
+  if (uSueltas > 0) partes.push(`${uSueltas} unidad${uSueltas===1?'':'es'}`);
+  if (cSobres > 0) partes.push(`${cSobres} sobre${cSobres===1?'':'s'}`);
+  if (cCajas > 0) partes.push(`${cCajas} caja${cCajas===1?'':'s'}`);
+  document.getElementById('scanNuevoTotalUnidades').textContent = partes.length ? partes.join(' + ') : '0';
+  return { uSueltas, cSobres, cCajas };
 }
 ['scanNuevoCantUnidades','scanNuevoCantSobres','scanNuevoCantCajas','scanNuevoUnidSobre','scanNuevoUnidCaja'].forEach(id => {
   document.getElementById(id).addEventListener('input', calcularTotalScanNuevo);
@@ -1510,15 +1570,17 @@ document.getElementById('btnScanRegistrar').onclick = () => {
   const precioSobre   = Number(document.getElementById('scanNuevoPrecioSobre').value) || 0;
   const unidadesCaja  = Number(document.getElementById('scanNuevoUnidCaja').value) || 0;
   const precioCaja    = Number(document.getElementById('scanNuevoPrecioCaja').value) || 0;
-  const cant = calcularTotalScanNuevo();
+  const { uSueltas, cSobres, cCajas } = calcularTotalScanNuevo();
   if (!nom) { toast('⚠ Ingresa el nombre'); return; }
-  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes de este producto (unidades, sobres o cajas)'); return; }
-  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
-    unidadesSobre, precioSobre, unidadesCaja, precioCaja };
+  if (uSueltas <= 0 && cSobres <= 0 && cCajas <= 0) { toast('⚠ Ingresa cuánto tienes de este producto (unidades, sobres o cajas)', 'warn'); return; }
+  const cantidad = uSueltas + cSobres*unidadesSobre + cCajas*unidadesCaja;
+  const item = { id: uid(), nombre: nom, cantidad, precio, codigo: cod,
+    unidadesSobre, precioSobre, unidadesCaja, precioCaja,
+    cantUnidad: uSueltas, cantSobre: cSobres, cantCaja: cCajas };
   db.inventario.push(item);
   wsSend({ t: 'inv_add', item });
   renderInv(); renderVentaSelect();
-  toast(`✅ Registrado: ${nom} (${cant} unidades)`);
+  toast(`✅ Registrado: ${nom}`);
   document.getElementById('scanNuevo').style.display = 'none';
   document.getElementById('scanRes').style.display = 'none';
 };
