@@ -276,9 +276,11 @@ function broadcast(obj, skip) {
 
 wss.on('connection', (ws, req) => {
   const ip = req.socket.remoteAddress;
+  const params = new URLSearchParams((req.url || '').split('?')[1] || '');
+  ws.rol = params.get('rol') === 'admin' ? 'admin' : 'operador';
   clients.add(ws);
   ws.isAlive = true;
-  console.log(`[WS] + ${ip}  (${clients.size} conectados)`);
+  console.log(`[WS] + ${ip} (rol: ${ws.rol})  (${clients.size} conectados)`);
 
   send(ws, { t: 'db', db });
 
@@ -319,6 +321,11 @@ wss.on('connection', (ws, req) => {
       }
 
       case 'inv_delete': {
+        if (ws.rol !== 'admin') {
+          send(ws, { t: 'permiso_denegado', accion: 'inv_delete' });
+          console.log(`[SEGURIDAD] Intento de borrar producto rechazado (rol: ${ws.rol})`);
+          break;
+        }
         db.inventario = db.inventario.filter(i => i.id !== m.id);
         persistirInvDelete(m.id);
         broadcast({ t: 'inv_delete', id: m.id }, ws);
