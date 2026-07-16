@@ -243,27 +243,44 @@ tr:hover td{background:var(--surface-2);}
     <div class="panel">
       <div class="fi">
         <input id="invNom" type="text" placeholder="Nombre del medicamento" style="flex:2;min-width:160px;"/>
-        <input id="invCant" type="number" min="0" value="1" placeholder="Stock (unidades)" style="width:120px;"/>
         <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio x unidad" style="width:120px;"/>
         <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
-        <button class="btn b" id="btnAddInv">➕ Agregar</button>
       </div>
+
       <button type="button" id="btnTogglePresent" style="background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:0 0 8px;">
         ▸ ¿También se vende por sobre o por caja? (opcional)
       </button>
       <div id="presentForm" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
-        <p class="sub" style="margin-bottom:8px;">Deja en 0 lo que no aplique. El stock siempre se cuenta en unidades sueltas.</p>
+        <p class="sub" style="margin-bottom:8px;">Deja en 0 lo que no aplique.</p>
         <div class="fi">
-          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Por sobre:</label>
+          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Sobre trae:</label>
           <input id="invUnidSobre" type="number" min="0" value="0" placeholder="Unidades x sobre" style="width:130px;"/>
-          <input id="invPrecioSobre" type="number" min="0" step="0.01" value="0" placeholder="Precio x sobre" style="width:120px;"/>
+          <label style="font-size:12px;">Precio del sobre:</label>
+          <input id="invPrecioSobre" type="number" min="0" step="0.01" value="0" placeholder="$ x sobre" style="width:120px;"/>
         </div>
         <div class="fi">
-          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Por caja:</label>
+          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Caja trae:</label>
           <input id="invUnidCaja" type="number" min="0" value="0" placeholder="Unidades x caja" style="width:130px;"/>
-          <input id="invPrecioCaja" type="number" min="0" step="0.01" value="0" placeholder="Precio x caja" style="width:120px;"/>
+          <label style="font-size:12px;">Precio de la caja:</label>
+          <input id="invPrecioCaja" type="number" min="0" step="0.01" value="0" placeholder="$ x caja" style="width:120px;"/>
         </div>
       </div>
+
+      <div style="background:var(--brand-ghost);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
+        <p class="sub" style="margin:0 0 8px;font-weight:700;color:var(--brand-dark);">¿Cuánto tienes en existencia ahora? (escribe lo que tengas de cada una)</p>
+        <div class="fi" style="margin-bottom:6px;">
+          <label style="font-size:12px;min-width:110px;">Unidades sueltas:</label>
+          <input id="invCantUnidades" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+          <label style="font-size:12px;min-width:70px;">Sobres:</label>
+          <input id="invCantSobres" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+          <label style="font-size:12px;min-width:60px;">Cajas:</label>
+          <input id="invCantCajas" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+        </div>
+        <p class="sub" style="margin:0;">Total en unidades: <strong id="invTotalUnidades" style="color:var(--brand-dark);">0</strong></p>
+      </div>
+
+      <button class="btn b" id="btnAddInv" style="width:100%;margin-bottom:12px;">➕ Agregar producto</button>
+
       <div class="fi" style="margin-bottom:8px;">
         <input id="fNom" type="text" placeholder="🔍 Buscar por nombre o escanear código..." style="flex:1;min-width:120px;"/>
         <input id="fCantMin" type="number" placeholder="Stock mín" style="width:90px;"/>
@@ -382,14 +399,20 @@ tr:hover td{background:var(--surface-2);}
       <div id="scanExiste" class="panel" style="display:none;">
         <h3 style="color:var(--ok);">✅ Producto encontrado</h3>
         <div id="scanExisteInfo" style="margin-bottom:10px;font-size:14px;"></div>
+        <p class="sub" style="margin-bottom:6px;">¿Cuánto entra? (escribe lo que llegó de cada presentación)</p>
+        <div class="fi" style="margin-bottom:6px;">
+          <label style="font-size:12px;min-width:100px;">Unidades sueltas:</label>
+          <input id="scanExUnidades" type="number" min="0" value="0" style="width:90px;"/>
+          <label id="lblScanExSobres" style="font-size:12px;min-width:70px;">Sobres:</label>
+          <input id="scanExSobres" type="number" min="0" value="0" style="width:90px;"/>
+          <label id="lblScanExCajas" style="font-size:12px;min-width:60px;">Cajas:</label>
+          <input id="scanExCajas" type="number" min="0" value="0" style="width:90px;"/>
+        </div>
+        <p class="sub" style="margin-bottom:10px;">Total a agregar: <strong id="scanExTotalUnidades" style="color:var(--ok);">0</strong> unidades</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
           <div>
-            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Unidades a agregar:</label>
-            <input id="scanExCant" type="number" min="1" value="1" style="width:90px;"/>
-          </div>
-          <div>
-            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Nuevo precio (0=sin cambio):</label>
-            <input id="scanExPrecio" type="number" min="0" step="0.01" value="0" style="width:130px;"/>
+            <label style="font-size:12px;font-weight:700;display:block;margin-bottom:4px;">Nuevo precio x unidad (0=sin cambio):</label>
+            <input id="scanExPrecio" type="number" min="0" step="0.01" value="0" style="width:150px;"/>
           </div>
           <button class="btn gold" id="btnScanGuardar">💾 Guardar</button>
         </div>
@@ -403,8 +426,6 @@ tr:hover td{background:var(--surface-2);}
           <input id="scanNuevoCod" type="text" readonly style="background:#f5f5f5;"/>
           <label>Nombre: <span style="color:var(--err)">*</span></label>
           <input id="scanNuevoNom" type="text" placeholder="Ej: Paracetamol 500mg x10"/>
-          <label>Cantidad inicial (unidades):</label>
-          <input id="scanNuevoCant" type="number" min="1" value="1"/>
           <label>Precio por unidad ($):</label>
           <input id="scanNuevoPrecio" type="number" min="0" step="0.01" value="0"/>
           <label>Unidades por sobre (0 si no aplica):</label>
@@ -415,6 +436,26 @@ tr:hover td{background:var(--surface-2);}
           <input id="scanNuevoUnidCaja" type="number" min="0" value="0"/>
           <label>Precio por caja (0 si no aplica):</label>
           <input id="scanNuevoPrecioCaja" type="number" min="0" step="0.01" value="0"/>
+
+          <div style="background:var(--brand-ghost);border-radius:var(--r-sm);padding:10px;">
+            <p class="sub" style="margin:0 0 8px;font-weight:700;color:var(--brand-dark);">¿Cuánto tienes de este producto ahora?</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <div>
+                <label style="display:block;">Unidades sueltas:</label>
+                <input id="scanNuevoCantUnidades" type="number" min="0" value="0" style="width:90px;"/>
+              </div>
+              <div>
+                <label id="lblScanNuevoSobres" style="display:block;">Sobres:</label>
+                <input id="scanNuevoCantSobres" type="number" min="0" value="0" style="width:90px;"/>
+              </div>
+              <div>
+                <label id="lblScanNuevoCajas" style="display:block;">Cajas:</label>
+                <input id="scanNuevoCantCajas" type="number" min="0" value="0" style="width:90px;"/>
+              </div>
+            </div>
+            <p class="sub" style="margin:8px 0 0;">Total en unidades: <strong id="scanNuevoTotalUnidades" style="color:var(--brand-dark);">0</strong></p>
+          </div>
+
           <button class="btn gold" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
         </div>
       </div>
@@ -785,16 +826,31 @@ document.getElementById('btnTogglePresent').onclick = function() {
   this.textContent = (abierto ? '▸' : '▾') + ' ¿También se vende por sobre o por caja? (opcional)';
 };
 
+function calcularTotalUnidadesForm() {
+  const uSueltas = Number(document.getElementById('invCantUnidades').value) || 0;
+  const cSobres  = Number(document.getElementById('invCantSobres').value) || 0;
+  const cCajas   = Number(document.getElementById('invCantCajas').value) || 0;
+  const uxSobre  = Number(document.getElementById('invUnidSobre').value) || 0;
+  const uxCaja   = Number(document.getElementById('invUnidCaja').value) || 0;
+  const total = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
+  document.getElementById('invTotalUnidades').textContent = total;
+  return total;
+}
+['invCantUnidades','invCantSobres','invCantCajas','invUnidSobre','invUnidCaja'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcularTotalUnidadesForm);
+});
+
 document.getElementById('btnAddInv').onclick = () => {
   const nom    = document.getElementById('invNom').value.trim();
-  const cant   = Number(document.getElementById('invCant').value);
   const precio = Number(document.getElementById('invPrecio').value);
   const cod    = document.getElementById('invCod').value.trim();
   const unidadesSobre = Number(document.getElementById('invUnidSobre').value) || 0;
   const precioSobre   = Number(document.getElementById('invPrecioSobre').value) || 0;
   const unidadesCaja  = Number(document.getElementById('invUnidCaja').value) || 0;
   const precioCaja    = Number(document.getElementById('invPrecioCaja').value) || 0;
+  const cant = calcularTotalUnidadesForm();
   if (!nom) { toast('⚠ Ingresa un nombre'); return; }
+  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes en existencia (unidades, sobres o cajas)'); return; }
 
   const existente = db.inventario.find(i => i.nombre.toLowerCase() === nom.toLowerCase());
   if (existente) {
@@ -805,23 +861,26 @@ document.getElementById('btnAddInv').onclick = () => {
     existente.unidadesCaja  = unidadesCaja;  existente.precioCaja  = precioCaja;
     wsSend({ t: 'inv_update', item: existente });
     renderInv(); renderVentaSelect();
-    toast(`✅ Stock actualizado: ${nom}`);
+    toast(`✅ Stock actualizado: ${nom} (+${cant} unidades)`);
   } else {
     const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
       unidadesSobre, precioSobre, unidadesCaja, precioCaja };
     db.inventario.push(item);
     wsSend({ t: 'inv_add', item });
     renderInv(); renderVentaSelect();
-    toast(`✅ Agregado: ${nom}`);
+    toast(`✅ Agregado: ${nom} (${cant} unidades en total)`);
   }
   document.getElementById('invNom').value = '';
-  document.getElementById('invCant').value = 1;
   document.getElementById('invPrecio').value = 0;
   document.getElementById('invCod').value = '';
   document.getElementById('invUnidSobre').value = 0;
   document.getElementById('invPrecioSobre').value = 0;
   document.getElementById('invUnidCaja').value = 0;
   document.getElementById('invPrecioCaja').value = 0;
+  document.getElementById('invCantUnidades').value = 0;
+  document.getElementById('invCantSobres').value = 0;
+  document.getElementById('invCantCajas').value = 0;
+  calcularTotalUnidadesForm();
 };
 
 document.getElementById('fNom').oninput = renderInv;
@@ -1305,9 +1364,22 @@ function procesarCodigo(codigo) {
     document.getElementById('scanExiste').style.display = 'block';
     document.getElementById('scanNuevo').style.display = 'none';
     document.getElementById('scanExisteInfo').innerHTML =
-      `<strong>${prod.nombre}</strong> &nbsp;|&nbsp; Stock: <strong>${prod.cantidad}</strong> &nbsp;|&nbsp; Precio: <strong>${money(prod.precio)}</strong>`;
-    document.getElementById('scanExCant').value = 1;
+      `<strong>${prod.nombre}</strong> &nbsp;|&nbsp; Stock: <strong>${prod.cantidad}</strong> unidades &nbsp;|&nbsp; Precio: <strong>${money(prod.precio)}</strong> c/u`;
+    document.getElementById('scanExUnidades').value = 0;
+    document.getElementById('scanExSobres').value = 0;
+    document.getElementById('scanExCajas').value = 0;
     document.getElementById('scanExPrecio').value = 0;
+    // Solo mostrar sobre/caja si el producto los tiene configurados
+    const tieneSobre = prod.unidadesSobre > 0;
+    const tieneCaja = prod.unidadesCaja > 0;
+    document.getElementById('scanExSobres').style.display = tieneSobre ? 'inline-block' : 'none';
+    document.getElementById('lblScanExSobres').style.display = tieneSobre ? 'inline-block' : 'none';
+    document.getElementById('scanExCajas').style.display = tieneCaja ? 'inline-block' : 'none';
+    document.getElementById('lblScanExCajas').style.display = tieneCaja ? 'inline-block' : 'none';
+    if (tieneSobre) document.getElementById('lblScanExSobres').textContent = `Sobres (${prod.unidadesSobre}u c/u):`;
+    if (tieneCaja) document.getElementById('lblScanExCajas').textContent = `Cajas (${prod.unidadesCaja}u c/u):`;
+    calcularTotalScanExistente(prod);
+    window._prodEnEdicionScan = prod.id;
     document.getElementById('btnScanGuardar').onclick = () => guardarExistente(prod.id);
   } else {
     res.innerHTML = `<div class="scan-nf">⚠️ Código <strong>${codigo}</strong> no está en inventario</div>`;
@@ -1315,12 +1387,15 @@ function procesarCodigo(codigo) {
     document.getElementById('scanNuevo').style.display = 'block';
     document.getElementById('scanNuevoCod').value = codigo;
     document.getElementById('scanNuevoNom').value = '';
-    document.getElementById('scanNuevoCant').value = 1;
     document.getElementById('scanNuevoPrecio').value = 0;
     document.getElementById('scanNuevoUnidSobre').value = 0;
     document.getElementById('scanNuevoPrecioSobre').value = 0;
     document.getElementById('scanNuevoUnidCaja').value = 0;
     document.getElementById('scanNuevoPrecioCaja').value = 0;
+    document.getElementById('scanNuevoCantUnidades').value = 0;
+    document.getElementById('scanNuevoCantSobres').value = 0;
+    document.getElementById('scanNuevoCantCajas').value = 0;
+    document.getElementById('scanNuevoTotalUnidades').textContent = '0';
     document.getElementById('scanNuevoNom').focus();
   }
 
@@ -1331,37 +1406,69 @@ function procesarCodigo(codigo) {
   renderScanHist();
 }
 
+function calcularTotalScanExistente(prod) {
+  const uSueltas = Number(document.getElementById('scanExUnidades').value) || 0;
+  const cSobres  = Number(document.getElementById('scanExSobres').value) || 0;
+  const cCajas   = Number(document.getElementById('scanExCajas').value) || 0;
+  const total = uSueltas + (cSobres * (prod.unidadesSobre || 0)) + (cCajas * (prod.unidadesCaja || 0));
+  document.getElementById('scanExTotalUnidades').textContent = total;
+  return total;
+}
+['scanExUnidades','scanExSobres','scanExCajas'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const idActual = window._prodEnEdicionScan;
+    const prod = db.inventario.find(i => i.id === idActual);
+    if (prod) calcularTotalScanExistente(prod);
+  });
+});
+
 function guardarExistente(prodId) {
   const prod = db.inventario.find(i => i.id === prodId);
   if (!prod) return;
-  const cant   = Number(document.getElementById('scanExCant').value) || 0;
+  window._prodEnEdicionScan = prodId;
+  const cant   = calcularTotalScanExistente(prod);
   const precio = Number(document.getElementById('scanExPrecio').value);
-  if (cant < 0) { toast('⚠ Cantidad inválida'); return; }
+  if (cant <= 0) { toast('⚠ Ingresa cuánto entró (unidades, sobres o cajas)'); return; }
   prod.cantidad += cant;
   if (precio > 0) prod.precio = precio;
   wsSend({ t: 'inv_update', item: prod });
   renderInv(); renderVentaSelect();
-  toast(`✅ ${prod.nombre}: +${cant} uds. Stock: ${prod.cantidad}`);
+  toast(`✅ ${prod.nombre}: +${cant} unidades. Stock: ${prod.cantidad}`);
   document.getElementById('scanExiste').style.display = 'none';
   document.getElementById('scanRes').style.display = 'none';
 }
 
+function calcularTotalScanNuevo() {
+  const uSueltas = Number(document.getElementById('scanNuevoCantUnidades').value) || 0;
+  const cSobres  = Number(document.getElementById('scanNuevoCantSobres').value) || 0;
+  const cCajas   = Number(document.getElementById('scanNuevoCantCajas').value) || 0;
+  const uxSobre  = Number(document.getElementById('scanNuevoUnidSobre').value) || 0;
+  const uxCaja   = Number(document.getElementById('scanNuevoUnidCaja').value) || 0;
+  const total = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
+  document.getElementById('scanNuevoTotalUnidades').textContent = total;
+  return total;
+}
+['scanNuevoCantUnidades','scanNuevoCantSobres','scanNuevoCantCajas','scanNuevoUnidSobre','scanNuevoUnidCaja'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcularTotalScanNuevo);
+});
+
 document.getElementById('btnScanRegistrar').onclick = () => {
   const cod    = document.getElementById('scanNuevoCod').value.trim();
   const nom    = document.getElementById('scanNuevoNom').value.trim();
-  const cant   = Number(document.getElementById('scanNuevoCant').value);
   const precio = Number(document.getElementById('scanNuevoPrecio').value);
   const unidadesSobre = Number(document.getElementById('scanNuevoUnidSobre').value) || 0;
   const precioSobre   = Number(document.getElementById('scanNuevoPrecioSobre').value) || 0;
   const unidadesCaja  = Number(document.getElementById('scanNuevoUnidCaja').value) || 0;
   const precioCaja    = Number(document.getElementById('scanNuevoPrecioCaja').value) || 0;
+  const cant = calcularTotalScanNuevo();
   if (!nom) { toast('⚠ Ingresa el nombre'); return; }
+  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes de este producto (unidades, sobres o cajas)'); return; }
   const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
     unidadesSobre, precioSobre, unidadesCaja, precioCaja };
   db.inventario.push(item);
   wsSend({ t: 'inv_add', item });
   renderInv(); renderVentaSelect();
-  toast(`✅ Registrado: ${nom}`);
+  toast(`✅ Registrado: ${nom} (${cant} unidades)`);
   document.getElementById('scanNuevo').style.display = 'none';
   document.getElementById('scanRes').style.display = 'none';
 };
