@@ -32,11 +32,11 @@ let db = { inventario: [], ventas: [], numeroFactura: 1 };
 function dbDemo() {
   return {
     inventario: [
-      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 20, precio: 320,  codigo: '', unidad: 'Caja' },
-      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 12, precio: 420,  codigo: '', unidad: 'Caja' },
-      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 5,  precio: 2200, codigo: '', unidad: 'Caja' },
-      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,  precio: 1250, codigo: '', unidad: 'Unidad' },
-      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 15, precio: 580,  codigo: '', unidad: 'Sobre' }
+      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 200, precio: 40,  codigo: '', unidadesCaja: 100, precioCaja: 3500, unidadesSobre: 0, precioSobre: 0 },
+      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 120, precio: 45,  codigo: '', unidadesCaja: 100, precioCaja: 4000, unidadesSobre: 10, precioSobre: 420 },
+      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 35,  precio: 320, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 7, precioSobre: 2100 },
+      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,   precio: 1250, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 0, precioSobre: 0 },
+      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 150, precio: 58,  codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 10, precioSobre: 550 }
     ],
     ventas: [],
     numeroFactura: 1
@@ -63,11 +63,19 @@ async function initPersistencia() {
         cantidad NUMERIC NOT NULL DEFAULT 0,
         precio   NUMERIC NOT NULL DEFAULT 0,
         codigo   TEXT DEFAULT '',
-        unidad   TEXT DEFAULT 'Unidad'
+        unidad   TEXT DEFAULT 'Unidad',
+        unidades_sobre NUMERIC DEFAULT 0,
+        precio_sobre   NUMERIC DEFAULT 0,
+        unidades_caja  NUMERIC DEFAULT 0,
+        precio_caja    NUMERIC DEFAULT 0
       );
     `);
-    // Migración segura: si la tabla ya existía de antes (v4 sin unidad), agrega la columna sin borrar nada.
+    // Migraciones seguras: agregan columnas nuevas sin borrar nada si la tabla ya existía.
     await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS unidad TEXT DEFAULT 'Unidad';`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS unidades_sobre NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS precio_sobre NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS unidades_caja NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS precio_caja NUMERIC DEFAULT 0;`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ventas (
         id       TEXT PRIMARY KEY,
@@ -93,8 +101,10 @@ async function initPersistencia() {
       const demo = dbDemo();
       for (const item of demo.inventario) {
         await pool.query(
-          'INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidad) VALUES ($1,$2,$3,$4,$5,$6)',
-          [item.id, item.nombre, item.cantidad, item.precio, item.codigo, item.unidad || 'Unidad']
+          `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [item.id, item.nombre, item.cantidad, item.precio, item.codigo,
+           item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
         );
       }
       await pool.query(
@@ -105,7 +115,9 @@ async function initPersistencia() {
       console.log('[DB-PG] Base de datos nueva — datos demo sembrados');
     } else {
       db.inventario = invRows.map(r => ({
-        id: r.id, nombre: r.nombre, cantidad: Number(r.cantidad), precio: Number(r.precio), codigo: r.codigo || '', unidad: r.unidad || 'Unidad'
+        id: r.id, nombre: r.nombre, cantidad: Number(r.cantidad), precio: Number(r.precio), codigo: r.codigo || '',
+        unidadesSobre: Number(r.unidades_sobre) || 0, precioSobre: Number(r.precio_sobre) || 0,
+        unidadesCaja: Number(r.unidades_caja) || 0, precioCaja: Number(r.precio_caja) || 0
       }));
       db.ventas = ventaRows.map(r => ({
         id: r.id, fecha: r.fecha.toISOString(), factura: r.factura, items: r.items, total: Number(r.total)
@@ -152,8 +164,10 @@ async function persistirInvAdd(item) {
   if (USE_PG) {
     try {
       await pool.query(
-        'INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidad) VALUES ($1,$2,$3,$4,$5,$6)',
-        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '', item.unidad || 'Unidad']
+        `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '',
+         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
       );
     } catch (e) { console.error('[DB-PG] Error insertando producto:', e.message); }
   } else guardarJSON();
@@ -163,8 +177,10 @@ async function persistirInvUpdate(item) {
   if (USE_PG) {
     try {
       await pool.query(
-        'UPDATE inventario SET nombre=$2, cantidad=$3, precio=$4, codigo=$5, unidad=$6 WHERE id=$1',
-        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '', item.unidad || 'Unidad']
+        `UPDATE inventario SET nombre=$2, cantidad=$3, precio=$4, codigo=$5,
+         unidades_sobre=$6, precio_sobre=$7, unidades_caja=$8, precio_caja=$9 WHERE id=$1`,
+        [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '',
+         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
       );
     } catch (e) { console.error('[DB-PG] Error actualizando producto:', e.message); }
   } else guardarJSON();
@@ -342,7 +358,9 @@ wss.on('connection', (ws, req) => {
         m.venta.items.forEach(vi => {
           const prod = db.inventario.find(i => i.id === vi.id || i.nombre === vi.nombre);
           if (prod) {
-            prod.cantidad = Math.max(0, prod.cantidad - vi.cantidad);
+            const cantVendida = Number(vi.cant) || 0;
+            const equivUnidades = Number(vi.unidadesBase) || 1;
+            prod.cantidad = Math.max(0, prod.cantidad - (cantVendida * equivUnidades));
             itemsActualizados.push(prod);
           }
         });
