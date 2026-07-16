@@ -241,42 +241,68 @@ tr:hover td{background:var(--surface-2);}
   <section id="sec-inv">
     <h1>📦 Inventario</h1>
     <div class="panel">
-      <div class="fi">
-        <input id="invNom" type="text" placeholder="Nombre del medicamento" style="flex:2;min-width:160px;"/>
-        <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio x unidad" style="width:120px;"/>
-        <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
+      <p class="sub" style="font-weight:700;color:var(--brand-dark);margin-bottom:10px;">① Datos básicos del producto</p>
+      <div class="fi" style="align-items:flex-start;">
+        <div style="flex:2;min-width:160px;">
+          <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Nombre del medicamento</label>
+          <input id="invNom" type="text" placeholder="Ej: Acetaminofén 500mg" style="width:100%;"/>
+        </div>
+        <div style="width:130px;">
+          <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Precio x unidad ($)</label>
+          <input id="invPrecio" type="number" min="0" step="0.01" value="0" style="width:100%;"/>
+        </div>
+        <div style="width:140px;">
+          <label style="font-size:11px;font-weight:700;color:var(--ink-soft);display:block;margin-bottom:3px;">Código de barras</label>
+          <input id="invCod" type="text" placeholder="Opcional" style="width:100%;"/>
+        </div>
       </div>
 
-      <button type="button" id="btnTogglePresent" style="background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:0 0 8px;">
-        ▸ ¿También se vende por sobre o por caja? (opcional)
+      <button type="button" id="btnTogglePresent" style="background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:8px 0;">
+        ▸ ② ¿También se vende por sobre o por caja? (opcional)
       </button>
       <div id="presentForm" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
-        <p class="sub" style="margin-bottom:8px;">Deja en 0 lo que no aplique.</p>
+        <p class="sub" style="margin-bottom:8px;">Deja los campos en 0 si esa presentación no aplica a este producto.</p>
         <div class="fi">
-          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Sobre trae:</label>
-          <input id="invUnidSobre" type="number" min="0" value="0" placeholder="Unidades x sobre" style="width:130px;"/>
-          <label style="font-size:12px;">Precio del sobre:</label>
-          <input id="invPrecioSobre" type="number" min="0" step="0.01" value="0" placeholder="$ x sobre" style="width:120px;"/>
+          <label style="font-size:12px;font-weight:700;min-width:90px;">📦 Sobre:</label>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">¿Cuántas unidades trae 1 sobre?</label>
+            <input id="invUnidSobre" type="number" min="0" value="0" style="width:100px;"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">Precio de venta de 1 sobre</label>
+            <input id="invPrecioSobre" type="number" min="0" step="0.01" value="0" style="width:110px;"/>
+          </div>
         </div>
         <div class="fi">
-          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Caja trae:</label>
-          <input id="invUnidCaja" type="number" min="0" value="0" placeholder="Unidades x caja" style="width:130px;"/>
-          <label style="font-size:12px;">Precio de la caja:</label>
-          <input id="invPrecioCaja" type="number" min="0" step="0.01" value="0" placeholder="$ x caja" style="width:120px;"/>
+          <label style="font-size:12px;font-weight:700;min-width:90px;">📦 Caja:</label>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">¿Cuántas unidades trae 1 caja?</label>
+            <input id="invUnidCaja" type="number" min="0" value="0" style="width:100px;"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">Precio de venta de 1 caja</label>
+            <input id="invPrecioCaja" type="number" min="0" step="0.01" value="0" style="width:110px;"/>
+          </div>
         </div>
       </div>
 
       <div style="background:var(--brand-ghost);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
-        <p class="sub" style="margin:0 0 8px;font-weight:700;color:var(--brand-dark);">¿Cuánto tienes en existencia ahora? (escribe lo que tengas de cada una)</p>
-        <div class="fi" style="margin-bottom:6px;">
-          <label style="font-size:12px;min-width:110px;">Unidades sueltas:</label>
-          <input id="invCantUnidades" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
-          <label style="font-size:12px;min-width:70px;">Sobres:</label>
-          <input id="invCantSobres" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
-          <label style="font-size:12px;min-width:60px;">Cajas:</label>
-          <input id="invCantCajas" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+        <p class="sub" style="margin:0 0 8px;font-weight:700;color:var(--brand-dark);">③ ¿Cuánto tienes en existencia AHORA MISMO? (escribe lo que tengas físicamente de cada presentación)</p>
+        <div class="fi" style="margin-bottom:6px;align-items:flex-start;">
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">Unidades sueltas (sin empacar)</label>
+            <input id="invCantUnidades" type="number" min="0" value="0" class="stock-in" style="width:110px;"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">Cantidad de sobres</label>
+            <input id="invCantSobres" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--ink-mute);display:block;">Cantidad de cajas</label>
+            <input id="invCantCajas" type="number" min="0" value="0" class="stock-in" style="width:100px;"/>
+          </div>
         </div>
-        <p class="sub" style="margin:0;">Total en unidades: <strong id="invTotalUnidades" style="color:var(--brand-dark);">0</strong></p>
+        <p class="sub" style="margin:0;">= Total que se guardará como stock: <strong id="invTotalUnidades" style="color:var(--brand-dark);font-size:15px;">0</strong> unidades</p>
       </div>
 
       <button class="btn b" id="btnAddInv" style="width:100%;margin-bottom:12px;">➕ Agregar producto</button>
@@ -292,7 +318,7 @@ tr:hover td{background:var(--surface-2);}
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio x unidad</th><th>Presentaciones</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock (unidades)</th><th>Precio x unidad</th><th>Presentaciones</th><th>Acciones</th></tr></thead>
           <tbody id="tbInv"></tbody>
         </table>
       </div>
@@ -764,8 +790,8 @@ function renderInv() {
           onchange="editItem(this)"/>
       </td>
       <td style="font-size:11px;">
-        <button class="btn sm sec" onclick="editarPresentaciones('${item.id}')">
-          ${item.precioSobre>0 ? `📦${money(item.precioSobre)}/sobre ` : ''}${item.precioCaja>0 ? `📦${money(item.precioCaja)}/caja` : ''}${(!item.precioSobre && !item.precioCaja) ? '➕ Config.' : ''}
+        <button class="btn sm sec" onclick="editarPresentaciones('${item.id}')" title="Configurar precios por sobre/caja">
+          ${item.precioSobre>0 ? `📦${money(item.precioSobre)}/sobre ` : ''}${item.precioCaja>0 ? `📦${money(item.precioCaja)}/caja` : ''}${(!item.precioSobre && !item.precioCaja) ? '➕ Solo se vende por unidad — config. sobre/caja' : ''}
         </button>
       </td>
       <td>
