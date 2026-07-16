@@ -32,11 +32,11 @@ let db = { inventario: [], ventas: [], numeroFactura: 1 };
 function dbDemo() {
   return {
     inventario: [
-      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 200, precio: 40,  codigo: '', unidadesCaja: 100, precioCaja: 3500, unidadesSobre: 0, precioSobre: 0 },
-      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 120, precio: 45,  codigo: '', unidadesCaja: 100, precioCaja: 4000, unidadesSobre: 10, precioSobre: 420 },
-      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 35,  precio: 320, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 7, precioSobre: 2100 },
-      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,   precio: 1250, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 0, precioSobre: 0 },
-      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 150, precio: 58,  codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 10, precioSobre: 550 }
+      { id: uid(), nombre: 'Paracetamol 500mg x10', cantidad: 200, precio: 40,  codigo: '', unidadesCaja: 100, precioCaja: 3500, unidadesSobre: 0, precioSobre: 0, cantUnidad: 0, cantSobre: 0, cantCaja: 2 },
+      { id: uid(), nombre: 'Ibuprofeno 400mg x10',  cantidad: 120, precio: 45,  codigo: '', unidadesCaja: 100, precioCaja: 4000, unidadesSobre: 10, precioSobre: 420, cantUnidad: 0, cantSobre: 2, cantCaja: 1 },
+      { id: uid(), nombre: 'Amoxicilina 500mg x7',  cantidad: 35,  precio: 320, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 7, precioSobre: 2100, cantUnidad: 0, cantSobre: 5, cantCaja: 0 },
+      { id: uid(), nombre: 'Jarabe Tos 120ml',       cantidad: 8,   precio: 1250, codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 0, precioSobre: 0, cantUnidad: 8, cantSobre: 0, cantCaja: 0 },
+      { id: uid(), nombre: 'Loratadina 10mg x10',   cantidad: 150, precio: 58,  codigo: '', unidadesCaja: 0, precioCaja: 0, unidadesSobre: 10, precioSobre: 550, cantUnidad: 0, cantSobre: 15, cantCaja: 0 }
     ],
     ventas: [],
     numeroFactura: 1
@@ -67,7 +67,10 @@ async function initPersistencia() {
         unidades_sobre NUMERIC DEFAULT 0,
         precio_sobre   NUMERIC DEFAULT 0,
         unidades_caja  NUMERIC DEFAULT 0,
-        precio_caja    NUMERIC DEFAULT 0
+        precio_caja    NUMERIC DEFAULT 0,
+        cant_unidad NUMERIC DEFAULT 0,
+        cant_sobre  NUMERIC DEFAULT 0,
+        cant_caja   NUMERIC DEFAULT 0
       );
     `);
     // Migraciones seguras: agregan columnas nuevas sin borrar nada si la tabla ya existía.
@@ -76,6 +79,15 @@ async function initPersistencia() {
     await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS precio_sobre NUMERIC DEFAULT 0;`);
     await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS unidades_caja NUMERIC DEFAULT 0;`);
     await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS precio_caja NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS cant_unidad NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS cant_sobre NUMERIC DEFAULT 0;`);
+    await pool.query(`ALTER TABLE inventario ADD COLUMN IF NOT EXISTS cant_caja NUMERIC DEFAULT 0;`);
+    // Migración de datos: si un producto viejo tiene "cantidad" pero nunca se le asignó
+    // desglose por presentación, se asume que todo lo que tenía era "unidades sueltas".
+    await pool.query(`
+      UPDATE inventario SET cant_unidad = cantidad
+      WHERE cant_unidad = 0 AND cant_sobre = 0 AND cant_caja = 0 AND cantidad > 0;
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ventas (
         id       TEXT PRIMARY KEY,
@@ -101,10 +113,11 @@ async function initPersistencia() {
       const demo = dbDemo();
       for (const item of demo.inventario) {
         await pool.query(
-          `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja, cant_unidad, cant_sobre, cant_caja)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
           [item.id, item.nombre, item.cantidad, item.precio, item.codigo,
-           item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
+           item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0,
+           item.cantUnidad || 0, item.cantSobre || 0, item.cantCaja || 0]
         );
       }
       await pool.query(
@@ -117,7 +130,8 @@ async function initPersistencia() {
       db.inventario = invRows.map(r => ({
         id: r.id, nombre: r.nombre, cantidad: Number(r.cantidad), precio: Number(r.precio), codigo: r.codigo || '',
         unidadesSobre: Number(r.unidades_sobre) || 0, precioSobre: Number(r.precio_sobre) || 0,
-        unidadesCaja: Number(r.unidades_caja) || 0, precioCaja: Number(r.precio_caja) || 0
+        unidadesCaja: Number(r.unidades_caja) || 0, precioCaja: Number(r.precio_caja) || 0,
+        cantUnidad: Number(r.cant_unidad) || 0, cantSobre: Number(r.cant_sobre) || 0, cantCaja: Number(r.cant_caja) || 0
       }));
       db.ventas = ventaRows.map(r => ({
         id: r.id, fecha: r.fecha.toISOString(), factura: r.factura, items: r.items, total: Number(r.total)
@@ -164,10 +178,11 @@ async function persistirInvAdd(item) {
   if (USE_PG) {
     try {
       await pool.query(
-        `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        `INSERT INTO inventario (id, nombre, cantidad, precio, codigo, unidades_sobre, precio_sobre, unidades_caja, precio_caja, cant_unidad, cant_sobre, cant_caja)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
         [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '',
-         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
+         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0,
+         item.cantUnidad || 0, item.cantSobre || 0, item.cantCaja || 0]
       );
     } catch (e) { console.error('[DB-PG] Error insertando producto:', e.message); }
   } else guardarJSON();
@@ -178,9 +193,11 @@ async function persistirInvUpdate(item) {
     try {
       await pool.query(
         `UPDATE inventario SET nombre=$2, cantidad=$3, precio=$4, codigo=$5,
-         unidades_sobre=$6, precio_sobre=$7, unidades_caja=$8, precio_caja=$9 WHERE id=$1`,
+         unidades_sobre=$6, precio_sobre=$7, unidades_caja=$8, precio_caja=$9,
+         cant_unidad=$10, cant_sobre=$11, cant_caja=$12 WHERE id=$1`,
         [item.id, item.nombre, item.cantidad, item.precio, item.codigo || '',
-         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0]
+         item.unidadesSobre || 0, item.precioSobre || 0, item.unidadesCaja || 0, item.precioCaja || 0,
+         item.cantUnidad || 0, item.cantSobre || 0, item.cantCaja || 0]
       );
     } catch (e) { console.error('[DB-PG] Error actualizando producto:', e.message); }
   } else guardarJSON();
@@ -206,7 +223,10 @@ async function persistirVenta(venta, numeroFactura, itemsActualizados) {
         [String(numeroFactura)]
       );
       for (const item of itemsActualizados) {
-        await pool.query('UPDATE inventario SET cantidad=$2 WHERE id=$1', [item.id, item.cantidad]);
+        await pool.query(
+          'UPDATE inventario SET cantidad=$2, cant_unidad=$3, cant_sobre=$4, cant_caja=$5 WHERE id=$1',
+          [item.id, item.cantidad, item.cantUnidad || 0, item.cantSobre || 0, item.cantCaja || 0]
+        );
       }
     } catch (e) { console.error('[DB-PG] Error guardando venta:', e.message); }
   } else guardarJSON();
@@ -359,8 +379,14 @@ wss.on('connection', (ws, req) => {
           const prod = db.inventario.find(i => i.id === vi.id || i.nombre === vi.nombre);
           if (prod) {
             const cantVendida = Number(vi.cant) || 0;
-            const equivUnidades = Number(vi.unidadesBase) || 1;
-            prod.cantidad = Math.max(0, prod.cantidad - (cantVendida * equivUnidades));
+            const pres = vi.presentacion || 'Unidad';
+            if (pres === 'Caja') prod.cantCaja = Math.max(0, (prod.cantCaja || 0) - cantVendida);
+            else if (pres === 'Sobre') prod.cantSobre = Math.max(0, (prod.cantSobre || 0) - cantVendida);
+            else prod.cantUnidad = Math.max(0, (prod.cantUnidad || 0) - cantVendida);
+            // El total en unidades base queda siempre sincronizado con los 3 buckets
+            prod.cantidad = (prod.cantUnidad || 0)
+              + (prod.cantSobre || 0) * (prod.unidadesSobre || 0)
+              + (prod.cantCaja || 0) * (prod.unidadesCaja || 0);
             itemsActualizados.push(prod);
           }
         });
