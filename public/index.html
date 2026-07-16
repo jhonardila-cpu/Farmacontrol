@@ -413,6 +413,7 @@ let carrito = [];
 let ws = null;
 let wsOk = false;
 let sesion = null;
+let miRol = 'operador';
 let scanActivo = false;
 let scanHist = [];
 let _scanTimer = null;
@@ -423,7 +424,8 @@ let _scanTimer = null;
 function wsConnect() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   const host  = location.host;
-  try { ws = new WebSocket(`${proto}://${host}`); }
+  const rol   = sessionStorage.getItem('fc_rol') || 'operador';
+  try { ws = new WebSocket(`${proto}://${host}?rol=${encodeURIComponent(rol)}`); }
   catch(e) { setConn(false); return; }
 
   ws.onopen = () => {
@@ -451,6 +453,10 @@ function wsConnect() {
       case 'inv_delete':
         db.inventario = db.inventario.filter(i => i.id !== m.id);
         renderInv(); renderVentaSelect();
+        break;
+      case 'permiso_denegado':
+        toast('⛔ Tu usuario (cajero) no tiene permiso para esta acción', 'err');
+        wsSend({ t: 'get_db' }); // resincroniza por si el navegador quedó desactualizado
         break;
       case 'inv_sync':
         db.inventario = m.inventario; renderInv(); renderVentaSelect();
@@ -556,9 +562,18 @@ document.getElementById('btnOut').onclick = () => {
 };
 
 function showApp() {
+  miRol = sessionStorage.getItem('fc_rol') || 'operador';
   document.getElementById('app').style.display = 'block';
   document.getElementById('btnOut').style.display = 'inline-block';
+  aplicarPermisosRol();
   wsConnect();
+}
+
+function aplicarPermisosRol() {
+  // El cajero puede vender y consultar, pero no borrar inventario
+  const esAdmin = miRol === 'admin';
+  const btnLimpiar = document.getElementById('btnLimpiarInv');
+  if (btnLimpiar) btnLimpiar.style.display = esAdmin ? 'inline-block' : 'none';
 }
 
 // ════════════════════════════════════════════════════════
@@ -658,7 +673,7 @@ function renderInv() {
           onchange="editItem(this)"/>
       </td>
       <td>
-        <button class="btn sm gr" onclick="delItem('${item.id}')">🗑</button>
+        ${miRol === 'admin' ? `<button class="btn sm gr" onclick="delItem('${item.id}')">🗑</button>` : ''}
       </td>
     </tr>`).join('');
 }
@@ -671,6 +686,7 @@ function editItem(inp) {
 }
 
 function delItem(id) {
+  if (miRol !== 'admin') { toast('⛔ Solo el administrador puede eliminar productos', 'err'); return; }
   if (!confirm('¿Eliminar producto?')) return;
   db.inventario = db.inventario.filter(i => i.id !== id);
   wsSend({ t: 'inv_delete', id });
@@ -714,6 +730,7 @@ document.getElementById('btnFiltroOff').onclick = () => {
 };
 
 document.getElementById('btnLimpiarInv').onclick = () => {
+  if (miRol !== 'admin') { toast('⛔ Solo el administrador puede limpiar el inventario', 'err'); return; }
   if (!confirm('¿Eliminar TODO el inventario? Esta acción no se puede deshacer.')) return;
   const ids = db.inventario.map(i => i.id);
   ids.forEach(id => wsSend({ t: 'inv_delete', id }));
