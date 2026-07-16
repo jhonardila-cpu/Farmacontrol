@@ -243,24 +243,39 @@ tr:hover td{background:var(--surface-2);}
     <div class="panel">
       <div class="fi">
         <input id="invNom" type="text" placeholder="Nombre del medicamento" style="flex:2;min-width:160px;"/>
-        <input id="invCant" type="number" min="0" value="1" placeholder="Cant." style="width:80px;"/>
-        <select id="invUnidad" style="width:100px;">
-          <option value="Unidad">Unidad</option>
-          <option value="Sobre">Sobre</option>
-          <option value="Caja">Caja</option>
-        </select>
-        <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio" style="width:110px;"/>
+        <input id="invCant" type="number" min="0" value="1" placeholder="Stock (unidades)" style="width:120px;"/>
+        <input id="invPrecio" type="number" min="0" step="0.01" value="0" placeholder="Precio x unidad" style="width:120px;"/>
         <input id="invCod" type="text" placeholder="Código (opcional)" style="width:130px;"/>
         <button class="btn b" id="btnAddInv">➕ Agregar</button>
+      </div>
+      <button type="button" id="btnTogglePresent" style="background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:0 0 8px;">
+        ▸ ¿También se vende por sobre o por caja? (opcional)
+      </button>
+      <div id="presentForm" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
+        <p class="sub" style="margin-bottom:8px;">Deja en 0 lo que no aplique. El stock siempre se cuenta en unidades sueltas.</p>
+        <div class="fi">
+          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Por sobre:</label>
+          <input id="invUnidSobre" type="number" min="0" value="0" placeholder="Unidades x sobre" style="width:130px;"/>
+          <input id="invPrecioSobre" type="number" min="0" step="0.01" value="0" placeholder="Precio x sobre" style="width:120px;"/>
+        </div>
+        <div class="fi">
+          <label style="font-size:12px;font-weight:700;min-width:120px;">📦 Por caja:</label>
+          <input id="invUnidCaja" type="number" min="0" value="0" placeholder="Unidades x caja" style="width:130px;"/>
+          <input id="invPrecioCaja" type="number" min="0" step="0.01" value="0" placeholder="Precio x caja" style="width:120px;"/>
+        </div>
       </div>
       <div class="fi" style="margin-bottom:8px;">
         <input id="fNom" type="text" placeholder="🔍 Buscar por nombre o escanear código..." style="flex:1;min-width:120px;"/>
         <input id="fCantMin" type="number" placeholder="Stock mín" style="width:90px;"/>
         <button class="btn b sm" id="btnFiltroOff">Limpiar</button>
       </div>
+      <div id="invNoEncontrado" style="display:none;background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;align-items:center;justify-content:space-between;gap:8px;">
+        <span style="font-size:12px;font-weight:700;color:var(--warn);"></span>
+        <button class="btn sm gold" id="btnUsarCodigoNuevo">➕ Registrar este código</button>
+      </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Unidad</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>#</th><th>Nombre</th><th>Código</th><th>Stock</th><th>Precio x unidad</th><th>Presentaciones</th><th>Acciones</th></tr></thead>
           <tbody id="tbInv"></tbody>
         </table>
       </div>
@@ -290,8 +305,18 @@ tr:hover td{background:var(--surface-2);}
           placeholder="Toca aquí y dispara el gatillo..." readonly
           style="display:none;width:100%;font-size:16px;padding:12px;border:2px solid var(--ok);background:var(--ok-bg);border-radius:var(--r-sm);letter-spacing:1px;font-weight:700;min-height:48px;margin-bottom:10px;color:var(--ink);"/>
 
+        <div id="elegirPresentacionScan" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+
         <div class="fi" style="flex-direction:column;align-items:stretch;">
           <select id="selProd" style="width:100%;"></select>
+          <select id="selPresentacion" style="display:none;width:100%;">
+            <option value="Unidad">Vender por Unidad</option>
+            <option value="Sobre">Vender por Sobre</option>
+            <option value="Caja">Vender por Caja</option>
+          </select>
           <div style="display:flex;gap:8px;">
             <input id="ventaCant" type="number" min="1" value="1" style="width:80px;"/>
             <button class="btn b" id="btnAddCart" style="flex:1;">➕ Agregar</button>
@@ -378,16 +403,18 @@ tr:hover td{background:var(--surface-2);}
           <input id="scanNuevoCod" type="text" readonly style="background:#f5f5f5;"/>
           <label>Nombre: <span style="color:var(--err)">*</span></label>
           <input id="scanNuevoNom" type="text" placeholder="Ej: Paracetamol 500mg x10"/>
-          <label>Cantidad inicial:</label>
+          <label>Cantidad inicial (unidades):</label>
           <input id="scanNuevoCant" type="number" min="1" value="1"/>
-          <label>Unidad de venta:</label>
-          <select id="scanNuevoUnidad">
-            <option value="Unidad">Unidad</option>
-            <option value="Sobre">Sobre</option>
-            <option value="Caja">Caja</option>
-          </select>
-          <label>Precio unitario ($):</label>
+          <label>Precio por unidad ($):</label>
           <input id="scanNuevoPrecio" type="number" min="0" step="0.01" value="0"/>
+          <label>Unidades por sobre (0 si no aplica):</label>
+          <input id="scanNuevoUnidSobre" type="number" min="0" value="0"/>
+          <label>Precio por sobre (0 si no aplica):</label>
+          <input id="scanNuevoPrecioSobre" type="number" min="0" step="0.01" value="0"/>
+          <label>Unidades por caja (0 si no aplica):</label>
+          <input id="scanNuevoUnidCaja" type="number" min="0" value="0"/>
+          <label>Precio por caja (0 si no aplica):</label>
+          <input id="scanNuevoPrecioCaja" type="number" min="0" step="0.01" value="0"/>
           <button class="btn gold" id="btnScanRegistrar" style="margin-top:6px;">➕ Registrar</button>
         </div>
       </div>
@@ -648,6 +675,14 @@ function renderInv() {
     i.cantidad >= fCant
   );
 
+  const avisoNuevo = document.getElementById('invNoEncontrado');
+  if (fNom && !lista.length && db.inventario.length) {
+    avisoNuevo.style.display = 'flex';
+    avisoNuevo.querySelector('span').textContent = `"${fNom}" no está en el inventario.`;
+  } else {
+    avisoNuevo.style.display = 'none';
+  }
+
   const tb = document.getElementById('tbInv');
   if (!lista.length) {
     if (!db.inventario.length) {
@@ -665,7 +700,7 @@ function renderInv() {
         <div class="empty-state">
           <div class="ico">🔍</div>
           <div class="msg">Sin resultados para ese filtro</div>
-          <div class="sub">Prueba con otro nombre o baja el stock mínimo</div>
+          <div class="sub">¿Es un código nuevo? Usa el botón de arriba para registrarlo, o prueba con otro nombre</div>
         </div>
       </td></tr>`;
     }
@@ -678,13 +713,6 @@ function renderInv() {
       <td style="text-align:left;font-weight:600;">${item.nombre}</td>
       <td style="font-size:11px;color:var(--ink-mute);">${item.codigo || '—'}</td>
       <td>
-        <select data-id="${item.id}" data-field="unidad" onchange="editUnidad(this)" style="padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:12px;">
-          <option value="Unidad" ${(!item.unidad||item.unidad==='Unidad')?'selected':''}>Unidad</option>
-          <option value="Sobre" ${item.unidad==='Sobre'?'selected':''}>Sobre</option>
-          <option value="Caja" ${item.unidad==='Caja'?'selected':''}>Caja</option>
-        </select>
-      </td>
-      <td>
         <input type="number" min="0" value="${item.cantidad}" data-id="${item.id}" data-field="cantidad"
           style="width:60px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
           onchange="editItem(this)"/>
@@ -694,11 +722,44 @@ function renderInv() {
           style="width:80px;text-align:center;padding:5px;border-radius:6px;border:1.5px solid var(--line);font-size:13px;"
           onchange="editItem(this)"/>
       </td>
+      <td style="font-size:11px;">
+        <button class="btn sm sec" onclick="editarPresentaciones('${item.id}')">
+          ${item.precioSobre>0 ? `📦${money(item.precioSobre)}/sobre ` : ''}${item.precioCaja>0 ? `📦${money(item.precioCaja)}/caja` : ''}${(!item.precioSobre && !item.precioCaja) ? '➕ Config.' : ''}
+        </button>
+      </td>
       <td>
         ${miRol === 'admin' ? `<button class="btn sm gr" onclick="delItem('${item.id}')">🗑</button>` : ''}
       </td>
     </tr>`).join('');
 }
+
+function editarPresentaciones(id) {
+  const item = db.inventario.find(i => i.id === id);
+  if (!item) return;
+  const uSobre = prompt(`${item.nombre}\n\n¿Cuántas unidades trae 1 SOBRE? (0 si no aplica)`, item.unidadesSobre || 0);
+  if (uSobre === null) return;
+  const pSobre = prompt('¿Precio de venta por SOBRE? (0 si no aplica)', item.precioSobre || 0);
+  if (pSobre === null) return;
+  const uCaja = prompt('¿Cuántas unidades trae 1 CAJA? (0 si no aplica)', item.unidadesCaja || 0);
+  if (uCaja === null) return;
+  const pCaja = prompt('¿Precio de venta por CAJA? (0 si no aplica)', item.precioCaja || 0);
+  if (pCaja === null) return;
+  item.unidadesSobre = Number(uSobre) || 0;
+  item.precioSobre   = Number(pSobre) || 0;
+  item.unidadesCaja  = Number(uCaja) || 0;
+  item.precioCaja    = Number(pCaja) || 0;
+  wsSend({ t: 'inv_update', item });
+  renderInv(); renderVentaSelect();
+  toast(`✅ Presentaciones actualizadas: ${item.nombre}`);
+}
+
+document.getElementById('btnUsarCodigoNuevo').onclick = () => {
+  const cod = document.getElementById('fNom').value.trim();
+  document.getElementById('invCod').value = cod;
+  document.getElementById('invNom').focus();
+  document.getElementById('invNoEncontrado').style.display = 'none';
+  toast('📝 Completa nombre y precio, luego toca "➕ Agregar"');
+};
 
 function editItem(inp) {
   const item = db.inventario.find(i => i.id === inp.dataset.id);
@@ -707,14 +768,7 @@ function editItem(inp) {
   wsSend({ t: 'inv_update', item });
 }
 
-function editUnidad(sel) {
-  const item = db.inventario.find(i => i.id === sel.dataset.id);
-  if (!item) return;
-  item.unidad = sel.value;
-  wsSend({ t: 'inv_update', item });
-  renderVentaSelect();
-  toast(`✅ ${item.nombre}: unidad = ${sel.value}`);
-}
+
 
 function delItem(id) {
   if (miRol !== 'admin') { toast('⛔ Solo el administrador puede eliminar productos', 'err'); return; }
@@ -724,12 +778,22 @@ function delItem(id) {
   renderInv(); renderVentaSelect();
 }
 
+document.getElementById('btnTogglePresent').onclick = function() {
+  const box = document.getElementById('presentForm');
+  const abierto = box.style.display === 'block';
+  box.style.display = abierto ? 'none' : 'block';
+  this.textContent = (abierto ? '▸' : '▾') + ' ¿También se vende por sobre o por caja? (opcional)';
+};
+
 document.getElementById('btnAddInv').onclick = () => {
   const nom    = document.getElementById('invNom').value.trim();
   const cant   = Number(document.getElementById('invCant').value);
-  const unidad = document.getElementById('invUnidad').value;
   const precio = Number(document.getElementById('invPrecio').value);
   const cod    = document.getElementById('invCod').value.trim();
+  const unidadesSobre = Number(document.getElementById('invUnidSobre').value) || 0;
+  const precioSobre   = Number(document.getElementById('invPrecioSobre').value) || 0;
+  const unidadesCaja  = Number(document.getElementById('invUnidCaja').value) || 0;
+  const precioCaja    = Number(document.getElementById('invPrecioCaja').value) || 0;
   if (!nom) { toast('⚠ Ingresa un nombre'); return; }
 
   const existente = db.inventario.find(i => i.nombre.toLowerCase() === nom.toLowerCase());
@@ -737,12 +801,14 @@ document.getElementById('btnAddInv').onclick = () => {
     existente.cantidad += cant;
     if (precio > 0) existente.precio = precio;
     if (cod) existente.codigo = cod;
-    existente.unidad = unidad;
+    existente.unidadesSobre = unidadesSobre; existente.precioSobre = precioSobre;
+    existente.unidadesCaja  = unidadesCaja;  existente.precioCaja  = precioCaja;
     wsSend({ t: 'inv_update', item: existente });
     renderInv(); renderVentaSelect();
     toast(`✅ Stock actualizado: ${nom}`);
   } else {
-    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod, unidad };
+    const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
+      unidadesSobre, precioSobre, unidadesCaja, precioCaja };
     db.inventario.push(item);
     wsSend({ t: 'inv_add', item });
     renderInv(); renderVentaSelect();
@@ -752,7 +818,10 @@ document.getElementById('btnAddInv').onclick = () => {
   document.getElementById('invCant').value = 1;
   document.getElementById('invPrecio').value = 0;
   document.getElementById('invCod').value = '';
-  document.getElementById('invUnidad').value = 'Unidad';
+  document.getElementById('invUnidSobre').value = 0;
+  document.getElementById('invPrecioSobre').value = 0;
+  document.getElementById('invUnidCaja').value = 0;
+  document.getElementById('invPrecioCaja').value = 0;
 };
 
 document.getElementById('fNom').oninput = renderInv;
@@ -813,21 +882,50 @@ document.getElementById('btnDescargarRespaldo').onclick = async () => {
 // ════════════════════════════════════════════════════════
 //  VENTAS
 // ════════════════════════════════════════════════════════
+function presentacionesDisponibles(prod) {
+  const opts = [{ value: 'Unidad', label: `Unidad — ${money(prod.precio)} c/u` }];
+  if (prod.precioSobre > 0) opts.push({ value: 'Sobre', label: `Sobre (${prod.unidadesSobre||1}u) — ${money(prod.precioSobre)}` });
+  if (prod.precioCaja > 0) opts.push({ value: 'Caja', label: `Caja (${prod.unidadesCaja||1}u) — ${money(prod.precioCaja)}` });
+  return opts;
+}
+function precioPresentacion(prod, pres) {
+  if (pres === 'Sobre') return prod.precioSobre || 0;
+  if (pres === 'Caja') return prod.precioCaja || 0;
+  return prod.precio || 0;
+}
+function unidadesPorPresentacion(prod, pres) {
+  if (pres === 'Sobre') return prod.unidadesSobre || 1;
+  if (pres === 'Caja') return prod.unidadesCaja || 1;
+  return 1;
+}
+
 function renderVentaSelect() {
   const sel = document.getElementById('selProd');
   const prev = sel.value;
   sel.innerHTML = '<option value="">— Seleccionar producto —</option>' +
     db.inventario.filter(i => i.cantidad > 0)
-      .map(i => `<option value="${i.id}">${i.nombre} — ${i.unidad||'Unidad'} (${i.cantidad}) — ${money(i.precio)}</option>`)
+      .map(i => `<option value="${i.id}">${i.nombre} (${i.cantidad} unid. disp.)</option>`)
       .join('');
   sel.value = prev;
+  actualizarSelPresentacion();
 }
 
-function plural(unidad, cant) {
-  if (cant === 1) return unidad || 'Unidad';
-  const u = unidad || 'Unidad';
-  if (u === 'Unidad') return 'Unidades';
-  return u + 's'; // Sobre→Sobres, Caja→Cajas
+function actualizarSelPresentacion() {
+  const prod = db.inventario.find(i => i.id === document.getElementById('selProd').value);
+  const selPres = document.getElementById('selPresentacion');
+  if (!prod) { selPres.style.display = 'none'; return; }
+  const opts = presentacionesDisponibles(prod);
+  if (opts.length <= 1) { selPres.style.display = 'none'; selPres.innerHTML = ''; return; }
+  selPres.innerHTML = opts.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+  selPres.style.display = 'block';
+}
+document.getElementById('selProd').addEventListener('change', actualizarSelPresentacion);
+
+function plural(pres, cant) {
+  const p = pres || 'Unidad';
+  if (cant === 1) return p;
+  if (p === 'Unidad') return 'Unidades';
+  return p + 's'; // Sobre→Sobres, Caja→Cajas
 }
 
 function renderCart() {
@@ -836,7 +934,7 @@ function renderCart() {
   else c.innerHTML = carrito.map((ci, idx) => `
     <div class="cart-item">
       <span style="flex:1;text-align:left;">${ci.nombre}</span>
-      <span style="margin:0 8px;">${ci.cant} ${plural(ci.unidad, ci.cant)} × ${money(ci.precio)}</span>
+      <span style="margin:0 8px;">${ci.cant} ${plural(ci.presentacion, ci.cant)} × ${money(ci.precio)}</span>
       <button class="btn sm" style="background:var(--err);color:#fff;" onclick="quitarCart(${idx})">✕</button>
     </div>`).join('');
   const tot = carrito.reduce((s, ci) => s + ci.cant * ci.precio, 0);
@@ -848,20 +946,26 @@ function quitarCart(idx) {
   renderCart();
 }
 
-function agregarProductoCarrito(prod, cant) {
+function agregarProductoCarrito(prod, cant, presentacion) {
   if (!prod) return false;
+  presentacion = presentacion || 'Unidad';
   if (!carrito.length) {
     const cont = document.getElementById('reciboUltimaVenta');
     if (cont) cont.style.display = 'none';
   }
-  const existe = carrito.find(ci => ci.id === prod.id);
-  const enCarrito = existe ? existe.cant : 0;
-  if (enCarrito + cant > prod.cantidad) {
-    toast(`⚠ Stock insuficiente para ${prod.nombre} (disponible: ${prod.cantidad})`);
+  const equiv = unidadesPorPresentacion(prod, presentacion);
+  const precio = precioPresentacion(prod, presentacion);
+  // Suma unidades base ya reservadas de este producto en el carrito (sin importar la presentación de cada línea)
+  const unidadesEnCarrito = carrito.filter(ci => ci.id === prod.id)
+    .reduce((s, ci) => s + ci.cant * (ci.unidadesBase || 1), 0);
+  const unidadesNuevas = cant * equiv;
+  if (unidadesEnCarrito + unidadesNuevas > prod.cantidad) {
+    toast(`⚠ Stock insuficiente para ${prod.nombre} (disponible: ${prod.cantidad} unidades)`);
     return false;
   }
+  const existe = carrito.find(ci => ci.id === prod.id && ci.presentacion === presentacion);
   if (existe) { existe.cant += cant; }
-  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio: prod.precio, unidad: prod.unidad || 'Unidad' }); }
+  else { carrito.push({ id: prod.id, nombre: prod.nombre, cant, precio, presentacion, unidadesBase: equiv }); }
   renderCart();
   return true;
 }
@@ -871,7 +975,9 @@ document.getElementById('btnAddCart').onclick = () => {
   const cant = Number(document.getElementById('ventaCant').value) || 1;
   const prod = db.inventario.find(i => i.id === id);
   if (!prod) { toast('⚠ Selecciona un producto'); return; }
-  agregarProductoCarrito(prod, cant);
+  const selPres = document.getElementById('selPresentacion');
+  const presentacion = selPres.style.display !== 'none' ? selPres.value : 'Unidad';
+  agregarProductoCarrito(prod, cant, presentacion);
 };
 
 // ════════════════════════════════════════════════════════
@@ -920,8 +1026,30 @@ function procesarCodigoVenta(codigo) {
     procesarCodigo(codigo);
     return;
   }
-  const agregado = agregarProductoCarrito(prod, 1);
+  const opts = presentacionesDisponibles(prod);
+  if (opts.length > 1) {
+    mostrarElegirPresentacion(prod, opts);
+    return;
+  }
+  const agregado = agregarProductoCarrito(prod, 1, 'Unidad');
   if (agregado) toast(`✅ ${prod.nombre} agregado al carrito`);
+}
+
+function mostrarElegirPresentacion(prod, opts) {
+  const cont = document.getElementById('elegirPresentacionScan');
+  cont.style.display = 'block';
+  cont.querySelector('div').textContent = `¿Cómo vendes "${prod.nombre}"?`;
+  cont.querySelectorAll('div')[1].innerHTML = opts.map(o =>
+    `<button class="btn b sm" onclick="elegirPresentacionYAgregar('${prod.id}','${o.value}')">${o.label}</button>`
+  ).join('');
+}
+
+function elegirPresentacionYAgregar(prodId, presentacion) {
+  const prod = db.inventario.find(i => i.id === prodId);
+  document.getElementById('elegirPresentacionScan').style.display = 'none';
+  if (!prod) return;
+  const agregado = agregarProductoCarrito(prod, 1, presentacion);
+  if (agregado) toast(`✅ ${prod.nombre} (${presentacion}) agregado al carrito`);
 }
 
 campoScanVenta.addEventListener('input', function() {
@@ -978,7 +1106,7 @@ document.getElementById('btnVender').onclick = () => {
   db.numeroFactura++;
   carrito.forEach(ci => {
     const p = db.inventario.find(i => i.id === ci.id);
-    if (p) p.cantidad = Math.max(0, p.cantidad - ci.cant);
+    if (p) p.cantidad = Math.max(0, p.cantidad - ci.cant * (ci.unidadesBase || 1));
   });
   wsSend({ t: 'venta', venta, numeroFactura: db.numeroFactura });
   carrito = [];
@@ -1031,7 +1159,7 @@ function generarReciboPDF(venta) {
     venta.items.forEach(it => {
       const nombreCorto = it.nombre.length > 30 ? it.nombre.slice(0, 30) + '…' : it.nombre;
       doc.text(nombreCorto, 5, y); y += 3.6;
-      doc.text(`${it.cant} ${plural(it.unidad, it.cant)} x ${money(it.precio)}`, 5, y);
+      doc.text(`${it.cant} ${plural(it.presentacion || it.unidad, it.cant)} x ${money(it.precio)}`, 5, y);
       doc.text(money(it.cant * it.precio), 75, y, { align: 'right' });
       y += 5.2;
     });
@@ -1188,8 +1316,11 @@ function procesarCodigo(codigo) {
     document.getElementById('scanNuevoCod').value = codigo;
     document.getElementById('scanNuevoNom').value = '';
     document.getElementById('scanNuevoCant').value = 1;
-    document.getElementById('scanNuevoUnidad').value = 'Unidad';
     document.getElementById('scanNuevoPrecio').value = 0;
+    document.getElementById('scanNuevoUnidSobre').value = 0;
+    document.getElementById('scanNuevoPrecioSobre').value = 0;
+    document.getElementById('scanNuevoUnidCaja').value = 0;
+    document.getElementById('scanNuevoPrecioCaja').value = 0;
     document.getElementById('scanNuevoNom').focus();
   }
 
@@ -1219,10 +1350,14 @@ document.getElementById('btnScanRegistrar').onclick = () => {
   const cod    = document.getElementById('scanNuevoCod').value.trim();
   const nom    = document.getElementById('scanNuevoNom').value.trim();
   const cant   = Number(document.getElementById('scanNuevoCant').value);
-  const unidad = document.getElementById('scanNuevoUnidad').value;
   const precio = Number(document.getElementById('scanNuevoPrecio').value);
+  const unidadesSobre = Number(document.getElementById('scanNuevoUnidSobre').value) || 0;
+  const precioSobre   = Number(document.getElementById('scanNuevoPrecioSobre').value) || 0;
+  const unidadesCaja  = Number(document.getElementById('scanNuevoUnidCaja').value) || 0;
+  const precioCaja    = Number(document.getElementById('scanNuevoPrecioCaja').value) || 0;
   if (!nom) { toast('⚠ Ingresa el nombre'); return; }
-  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod, unidad };
+  const item = { id: uid(), nombre: nom, cantidad: cant, precio, codigo: cod,
+    unidadesSobre, precioSobre, unidadesCaja, precioCaja };
   db.inventario.push(item);
   wsSend({ t: 'inv_add', item });
   renderInv(); renderVentaSelect();
