@@ -257,11 +257,8 @@ tr:hover td{background:var(--surface-2);}
         </div>
       </div>
 
-      <button type="button" id="btnTogglePresent" style="background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:8px 0;">
-        ▸ ② ¿También se vende por sobre o por caja? (opcional)
-      </button>
-      <div id="presentForm" style="display:none;background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
-        <p class="sub" style="margin-bottom:8px;">Deja los campos en 0 si esa presentación no aplica a este producto.</p>
+      <p class="sub" style="font-weight:700;color:var(--brand-dark);margin-bottom:6px;">② ¿También se vende por sobre o por caja? <span style="font-weight:400;color:var(--ink-mute);">(deja en 0 lo que no aplique)</span></p>
+      <div id="presentForm" style="background:var(--surface-2);border-radius:var(--r-sm);padding:10px;margin-bottom:10px;">
         <div class="fi">
           <label style="font-size:12px;font-weight:700;min-width:90px;">📦 Sobre:</label>
           <div>
@@ -303,6 +300,7 @@ tr:hover td{background:var(--surface-2);}
           </div>
         </div>
         <p class="sub" style="margin:0;">= Total que se guardará como stock: <strong id="invTotalUnidades" style="color:var(--brand-dark);font-size:15px;">0</strong> unidades</p>
+        <p id="invAvisoConversion" class="sub" style="margin:6px 0 0;color:var(--warn);font-weight:700;display:none;"></p>
       </div>
 
       <button class="btn b" id="btnAddInv" style="width:100%;margin-bottom:12px;">➕ Agregar producto</button>
@@ -845,13 +843,6 @@ function delItem(id) {
   renderInv(); renderVentaSelect();
 }
 
-document.getElementById('btnTogglePresent').onclick = function() {
-  const box = document.getElementById('presentForm');
-  const abierto = box.style.display === 'block';
-  box.style.display = abierto ? 'none' : 'block';
-  this.textContent = (abierto ? '▸' : '▾') + ' ¿También se vende por sobre o por caja? (opcional)';
-};
-
 function calcularTotalUnidadesForm() {
   const uSueltas = Number(document.getElementById('invCantUnidades').value) || 0;
   const cSobres  = Number(document.getElementById('invCantSobres').value) || 0;
@@ -860,6 +851,17 @@ function calcularTotalUnidadesForm() {
   const uxCaja   = Number(document.getElementById('invUnidCaja').value) || 0;
   const total = uSueltas + (cSobres * uxSobre) + (cCajas * uxCaja);
   document.getElementById('invTotalUnidades').textContent = total;
+
+  const aviso = document.getElementById('invAvisoConversion');
+  if (cSobres > 0 && uxSobre === 0) {
+    aviso.style.display = 'block';
+    aviso.textContent = '⚠ Pusiste cantidad de sobres, pero falta indicar arriba cuántas unidades trae 1 sobre — si no, no cuenta.';
+  } else if (cCajas > 0 && uxCaja === 0) {
+    aviso.style.display = 'block';
+    aviso.textContent = '⚠ Pusiste cantidad de cajas, pero falta indicar arriba cuántas unidades trae 1 caja — si no, no cuenta.';
+  } else {
+    aviso.style.display = 'none';
+  }
   return total;
 }
 ['invCantUnidades','invCantSobres','invCantCajas','invUnidSobre','invUnidCaja'].forEach(id => {
@@ -876,7 +878,13 @@ document.getElementById('btnAddInv').onclick = () => {
   const precioCaja    = Number(document.getElementById('invPrecioCaja').value) || 0;
   const cant = calcularTotalUnidadesForm();
   if (!nom) { toast('⚠ Ingresa un nombre'); return; }
-  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes en existencia (unidades, sobres o cajas)'); return; }
+  const cSobres = Number(document.getElementById('invCantSobres').value) || 0;
+  const cCajas  = Number(document.getElementById('invCantCajas').value) || 0;
+  if (cant <= 0 && (cSobres > 0 || cCajas > 0)) {
+    toast('⚠ Falta indicar cuántas unidades trae 1 sobre/caja (arriba en el paso ②) para poder calcular el total', 'warn');
+    return;
+  }
+  if (cant <= 0) { toast('⚠ Ingresa cuánto tienes en existencia (unidades, sobres o cajas)', 'warn'); return; }
 
   const existente = db.inventario.find(i => i.nombre.toLowerCase() === nom.toLowerCase());
   if (existente) {
