@@ -392,7 +392,11 @@ tr:hover td{background:var(--surface-2);}
 
   <!-- RESUMEN -->
   <section id="sec-res" style="display:none;">
-    <h1>📊 Resumen Diario</h1>
+    <h1 style="justify-content:space-between;">
+      <span>📊 Resumen Diario</span>
+      <button class="btn sec sm" id="btnDescargarRespaldo">📥 Descargar respaldo</button>
+    </h1>
+    <p class="sub" style="margin-top:-10px;">Descarga una copia de todo el inventario y las ventas — guárdala en tu computador o en Google Drive de vez en cuando, por seguridad.</p>
     <div id="resContent"></div>
   </section>
 
@@ -727,6 +731,29 @@ document.getElementById('btnExportCSV').onclick = () => {
     download: `inventario_${new Date().toISOString().slice(0,10)}.csv`
   });
   a.click();
+};
+
+document.getElementById('btnDescargarRespaldo').onclick = async () => {
+  try {
+    // Pide el estado más fresco al servidor (por si el navegador se quedó con datos viejos)
+    const r = await fetch('/api/db');
+    const datos = await r.json();
+    const nombreNeg = (document.getElementById('tbBrand') || {}).textContent || 'FarmaControl';
+    const paquete = { generado: new Date().toISOString(), negocio: nombreNeg, ...datos };
+    const blob = new Blob([JSON.stringify(paquete, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const fecha = new Date().toISOString().slice(0,10);
+    const a = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `respaldo_${nombreNeg.replace(/\s+/g,'_')}_${fecha}.json`
+    });
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ Respaldo descargado — guárdalo en un lugar seguro (Google Drive, etc.)');
+  } catch (e) {
+    console.error('Error al generar respaldo:', e);
+    toast('⚠ No se pudo generar el respaldo. Intenta de nuevo.', 'warn');
+  }
 };
 
 // ════════════════════════════════════════════════════════
