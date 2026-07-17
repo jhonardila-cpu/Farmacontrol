@@ -94,9 +94,11 @@ async function initPersistencia() {
         fecha    TIMESTAMPTZ NOT NULL,
         factura  INTEGER NOT NULL,
         items    JSONB NOT NULL,
-        total    NUMERIC NOT NULL
+        total    NUMERIC NOT NULL,
+        anulada  BOOLEAN DEFAULT false
       );
     `);
+    await pool.query(`ALTER TABLE ventas ADD COLUMN IF NOT EXISTS anulada BOOLEAN DEFAULT false;`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS meta (
         clave TEXT PRIMARY KEY,
@@ -134,7 +136,7 @@ async function initPersistencia() {
         cantUnidad: Number(r.cant_unidad) || 0, cantSobre: Number(r.cant_sobre) || 0, cantCaja: Number(r.cant_caja) || 0
       }));
       db.ventas = ventaRows.map(r => ({
-        id: r.id, fecha: r.fecha.toISOString(), factura: r.factura, items: r.items, total: Number(r.total)
+        id: r.id, fecha: r.fecha.toISOString(), factura: r.factura, items: r.items, total: Number(r.total), anulada: !!r.anulada
       }));
       db.numeroFactura = metaRows.length ? (parseInt(metaRows[0].valor, 10) || 1) : 1;
       console.log(`[DB-PG] Cargado: ${db.inventario.length} productos, ${db.ventas.length} ventas`);
@@ -229,6 +231,32 @@ async function persistirVenta(venta, numeroFactura, itemsActualizados) {
         );
       }
     } catch (e) { console.error('[DB-PG] Error guardando venta:', e.message); }
+  } else guardarJSON();
+}
+
+async function persistirVentaAnular(venta, itemsActualizados) {
+  if (USE_PG) {
+    try {
+      await pool.query('UPDATE ventas SET anulada = true WHERE id=$1', [venta.id]);
+      for (const item of itemsActualizados) {
+        await pool.query(
+          'UPDATE inventario SET cantidad=$2, cant_unidad=$3, cant_sobre=$4, cant_caja=$5 WHERE id=$1',
+          [item.id, item.cantidad, item.cantUnidad || 0, item.cantSobre || 0, item.cantCaja || 0]
+        );
+      }
+    } catch (e) { console.error('[DB-PG] Error anulando venta:', e.message); }
+  } else guardarJSON();
+}
+
+async function persistirVentasLimpiar() {
+  if (USE_PG) {
+    try {
+      await pool.query('DELETE FROM ventas');
+      await pool.query(
+        `INSERT INTO meta (clave, valor) VALUES ('numeroFactura', '1')
+         ON CONFLICT (clave) DO UPDATE SET valor = '1'`
+      );
+    } catch (e) { console.error('[DB-PG] Error limpiando historial de ventas:', e.message); }
   } else guardarJSON();
 }
 
@@ -393,6 +421,50 @@ wss.on('connection', (ws, req) => {
         persistirVenta(m.venta, m.numeroFactura, itemsActualizados);
         broadcast({ t: 'venta', venta: m.venta, numeroFactura: m.numeroFactura, inventario: db.inventario }, ws);
         send(ws, { t: 'inv_sync', inventario: db.inventario });
+        break;
+      }
+
+      case 'venta_anular': {
+        if (ws.rol !== 'admin') {
+          send(ws, { t: 'permiso_denegado', accion: 'venta_anular' });
+          console.log(`[SEGURIDAD] Intento de anular venta rechazado (rol: ${ws.rol})`);
+          break;
+        }
+        const venta = db.ventas.find(v => v.id === m.ventaId);
+        if (!venta || venta.anulada) break;
+        venta.anulada = true;
+        // Revertir el stock: devolver cada item a su bucket correspondiente
+        const itemsActualizados = [];
+        venta.items.forEach(vi => {
+          const prod = db.inventario.find(i => i.id === vi.id || i.nombre === vi.nombre);
+          if (prod) {
+            const cant = Number(vi.cant) || 0;
+            const pres = vi.presentacion || 'Unidad';
+            if (pres === 'Caja') prod.cantCaja = (prod.cantCaja || 0) + cant;
+            else if (pres === 'Sobre') prod.cantSobre = (prod.cantSobre || 0) + cant;
+            else prod.cantUnidad = (prod.cantUnidad || 0) + cant;
+            prod.cantidad = (prod.cantUnidad || 0)
+              + (prod.cantSobre || 0) * (prod.unidadesSobre || 0)
+              + (prod.cantCaja || 0) * (prod.unidadesCaja || 0);
+            itemsActualizados.push(prod);
+          }
+        });
+        persistirVentaAnular(venta, itemsActualizados);
+        broadcast({ t: 'venta_anular', ventaId: venta.id, inventario: db.inventario }, ws);
+        send(ws, { t: 'inv_sync', inventario: db.inventario });
+        break;
+      }
+
+      case 'ventas_limpiar': {
+        if (ws.rol !== 'admin') {
+          send(ws, { t: 'permiso_denegado', accion: 'ventas_limpiar' });
+          console.log(`[SEGURIDAD] Intento de limpiar historial de ventas rechazado (rol: ${ws.rol})`);
+          break;
+        }
+        db.ventas = [];
+        db.numeroFactura = 1;
+        persistirVentasLimpiar();
+        broadcast({ t: 'ventas_limpiar' }, ws);
         break;
       }
 
