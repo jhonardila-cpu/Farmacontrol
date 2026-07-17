@@ -353,6 +353,7 @@ tr:hover td{background:var(--surface-2);}
 
         <div class="fi" style="flex-direction:column;align-items:stretch;">
           <select id="selProd" style="width:100%;"></select>
+          <label id="lblSelPresentacion" style="display:none;font-size:11px;font-weight:700;color:var(--ink-soft);margin:2px 0 -4px;">¿Cómo lo vendes?</label>
           <select id="selPresentacion" style="display:none;width:100%;">
             <option value="Unidad">Vender por Unidad</option>
             <option value="Sobre">Vender por Sobre</option>
@@ -500,10 +501,16 @@ tr:hover td{background:var(--surface-2);}
   <!-- RESUMEN -->
   <section id="sec-res" style="display:none;">
     <h1 style="justify-content:space-between;">
-      <span>📊 Resumen Diario</span>
+      <span>📊 Resumen</span>
       <button class="btn sec sm" id="btnDescargarRespaldo">📥 Descargar respaldo</button>
     </h1>
     <p class="sub" style="margin-top:-10px;">Descarga una copia de todo el inventario y las ventas — guárdala en tu computador o en Google Drive de vez en cuando, por seguridad.</p>
+    <div class="fi" style="margin-bottom:12px;">
+      <button class="btn sm b" data-periodo="hoy">Hoy</button>
+      <button class="btn sm sec" data-periodo="semana">Últimos 7 días</button>
+      <button class="btn sm sec" data-periodo="mes">Últimos 30 días</button>
+      <button class="btn sm sec" data-periodo="todo">Todo</button>
+    </div>
     <div id="resContent"></div>
   </section>
 
@@ -574,6 +581,18 @@ function wsConnect() {
           db.inventario = m.inventario;
           renderHist(); renderInv(); renderVentaSelect();
         }
+        break;
+      case 'venta_anular': {
+        const venta = db.ventas.find(v => v.id === m.ventaId);
+        if (venta) venta.anulada = true;
+        db.inventario = m.inventario;
+        renderInv(); renderVentaSelect(); renderResumen();
+        break;
+      }
+      case 'ventas_limpiar':
+        db.ventas = [];
+        db.numeroFactura = 1;
+        renderResumen();
         break;
       case 'scan': {
         // 🔥 Llegó un código escaneado desde la Zebra (módulo Escanear)
@@ -1042,21 +1061,18 @@ function renderVentaSelect() {
 function actualizarSelPresentacion() {
   const prod = db.inventario.find(i => i.id === document.getElementById('selProd').value);
   const selPres = document.getElementById('selPresentacion');
-  if (!prod) { selPres.style.display = 'none'; return; }
+  const lbl = document.getElementById('lblSelPresentacion');
+  if (!prod) { selPres.style.display = 'none'; selPres.innerHTML = ''; lbl.style.display = 'none'; return; }
   const opts = presentacionesDisponibles(prod);
   if (opts.length === 0) {
-    selPres.style.display = 'none'; selPres.innerHTML = '';
+    selPres.style.display = 'none'; selPres.innerHTML = ''; lbl.style.display = 'none';
     toast(`⚠ ${prod.nombre} no tiene ningún precio configurado (ni unidad, ni sobre, ni caja)`, 'warn');
     return;
   }
-  if (opts.length === 1) {
-    // Solo hay una forma válida de venderlo — se usa directo, sin mostrar el selector
-    selPres.style.display = 'none';
-    selPres.innerHTML = `<option value="${opts[0].value}" selected>${opts[0].label}</option>`;
-    return;
-  }
+  // Siempre visible: el cajero elige explícitamente cómo se vende, incluso si solo hay una opción
   selPres.innerHTML = opts.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
   selPres.style.display = 'block';
+  document.getElementById('lblSelPresentacion').style.display = 'block';
 }
 document.getElementById('selProd').addEventListener('change', actualizarSelPresentacion);
 
@@ -1342,8 +1358,9 @@ function generarReciboPDF(venta) {
 
 function renderHist() {
   const h = document.getElementById('histVentas');
-  if (!db.ventas.length) { h.innerHTML = `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas todavía</div><div class="sub">Las ventas que confirmes aparecerán aquí</div></div>`; return; }
-  const ultimas = [...db.ventas].reverse().slice(0, 20);
+  const activas = db.ventas.filter(v => !v.anulada);
+  if (!activas.length) { h.innerHTML = `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas todavía</div><div class="sub">Las ventas que confirmes aparecerán aquí</div></div>`; return; }
+  const ultimas = [...activas].reverse().slice(0, 20);
   h.innerHTML = `<table>
     <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Total</th><th>Recibo</th></tr></thead>
     <tbody>${ultimas.map(v => `
@@ -1601,20 +1618,51 @@ function renderScanHist() {
 // ════════════════════════════════════════════════════════
 //  RESUMEN DIARIO
 // ════════════════════════════════════════════════════════
-function renderResumen() {
-  const hoy = new Date().toDateString();
-  const ventasHoy = db.ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
-  const totalHoy  = ventasHoy.reduce((s, v) => s + v.total, 0);
-  const unidsHoy  = ventasHoy.reduce((s, v) => s + v.items.reduce((ss, i) => ss + i.cant, 0), 0);
-  const stockBajo = db.inventario.filter(i => i.cantidad <= 3);
+let resumenPeriodo = 'hoy';
 
-  // ── Últimos 7 días para el gráfico ──
+document.querySelectorAll('[data-periodo]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    resumenPeriodo = btn.dataset.periodo;
+    document.querySelectorAll('[data-periodo]').forEach(b => b.className = 'btn sm sec');
+    btn.className = 'btn sm b';
+    renderResumen();
+  });
+});
+
+function ventasDelPeriodo(periodo) {
+  const ahora = new Date();
+  const activas = db.ventas.filter(v => !v.anulada);
+  if (periodo === 'hoy') {
+    const hoy = ahora.toDateString();
+    return activas.filter(v => new Date(v.fecha).toDateString() === hoy);
+  }
+  if (periodo === 'semana') {
+    const hace7 = new Date(ahora); hace7.setDate(hace7.getDate() - 6); hace7.setHours(0,0,0,0);
+    return activas.filter(v => new Date(v.fecha) >= hace7);
+  }
+  if (periodo === 'mes') {
+    const hace30 = new Date(ahora); hace30.setDate(hace30.getDate() - 29); hace30.setHours(0,0,0,0);
+    return activas.filter(v => new Date(v.fecha) >= hace30);
+  }
+  return activas; // todo
+}
+
+const LABEL_PERIODO = { hoy: 'hoy', semana: 'en los últimos 7 días', mes: 'en los últimos 30 días', todo: 'en total' };
+
+function renderResumen() {
+  const ventasPeriodo = ventasDelPeriodo(resumenPeriodo);
+  const totalPeriodo  = ventasPeriodo.reduce((s, v) => s + v.total, 0);
+  const unidsPeriodo  = ventasPeriodo.reduce((s, v) => s + v.items.reduce((ss, i) => ss + i.cant, 0), 0);
+  const stockBajo = db.inventario.filter(i => i.cantidad <= 3);
+  const esAdmin = miRol === 'admin';
+
+  // ── Últimos 7 días para el gráfico (siempre fijo, independiente del período elegido) ──
   const dias = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const totalDia = db.ventas
-      .filter(v => new Date(v.fecha).toDateString() === d.toDateString())
+      .filter(v => !v.anulada && new Date(v.fecha).toDateString() === d.toDateString())
       .reduce((s, v) => s + v.total, 0);
     dias.push({ fecha: d, total: totalDia, esHoy: i === 0 });
   }
@@ -1622,9 +1670,9 @@ function renderResumen() {
 
   document.getElementById('resContent').innerHTML = `
     <div class="stat-grid">
-      <div class="stat"><div class="lbl">Ventas hoy</div><div class="val">${ventasHoy.length}</div></div>
-      <div class="stat"><div class="lbl">Total hoy</div><div class="val">${money(totalHoy)}</div></div>
-      <div class="stat"><div class="lbl">Unidades vendidas</div><div class="val">${unidsHoy}</div></div>
+      <div class="stat"><div class="lbl">Ventas ${LABEL_PERIODO[resumenPeriodo]}</div><div class="val">${ventasPeriodo.length}</div></div>
+      <div class="stat"><div class="lbl">Total ${LABEL_PERIODO[resumenPeriodo]}</div><div class="val">${money(totalPeriodo)}</div></div>
+      <div class="stat"><div class="lbl">Unidades vendidas</div><div class="val">${unidsPeriodo}</div></div>
       <div class="stat"><div class="lbl">Productos en inventario</div><div class="val">${db.inventario.length}</div></div>
     </div>
     <div class="panel">
@@ -1647,24 +1695,60 @@ function renderResumen() {
     ${stockBajo.length ? `
     <div class="panel" style="border-left:3px solid var(--warn);">
       <h3 style="color:var(--warn);">⚠ Stock bajo (≤ 3 unidades)</h3>
-      ${stockBajo.map(i => `<div style="padding:4px 0;font-size:13px;"><strong>${i.nombre}</strong> — ${i.cantidad} uds.</div>`).join('')}
+      ${stockBajo.map(i => `<div style="padding:4px 0;font-size:13px;"><strong>${i.nombre}</strong> — ${desgloseStock(i)}</div>`).join('')}
     </div>` : ''}
     <div class="panel">
-      <h3>Ventas de hoy</h3>
-      ${ventasHoy.length ? `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h3 style="margin:0;">Ventas ${LABEL_PERIODO[resumenPeriodo]}</h3>
+        ${esAdmin && ventasPeriodo.length ? `<button class="btn sm gr" id="btnLimpiarVentas">🗑 Limpiar historial de ventas</button>` : ''}
+      </div>
+      ${ventasPeriodo.length ? `
       <div class="tbl-wrap"><table>
-        <thead><tr><th>#</th><th>Hora</th><th>Productos</th><th>Total</th><th></th></tr></thead>
-        <tbody>${ventasHoy.map(v => `
+        <thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Total</th><th></th>${esAdmin ? '<th>Admin</th>' : ''}</tr></thead>
+        <tbody>${[...ventasPeriodo].reverse().map(v => `
           <tr>
             <td>${v.factura}</td>
-            <td>${new Date(v.fecha).toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'})}</td>
+            <td>${new Date(v.fecha).toLocaleString('es-CO',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
             <td style="text-align:left;">${v.items.map(i=>i.nombre).join(', ').slice(0,50)}</td>
             <td>${money(v.total)}</td>
-            <td><button class="btn sm sec" onclick='imprimirRecibo(${JSON.stringify(v).replace(/'/g,"&apos;")})'>🧾 Recibo</button></td>
+            <td><button class="btn sm sec" onclick='generarReciboPDF(${JSON.stringify(v).replace(/'/g,"&apos;")})'>🧾</button></td>
+            ${esAdmin ? `<td><button class="btn sm gr" onclick="anularVenta('${v.id}')" title="Anular esta venta y devolver el stock">🚫 Anular</button></td>` : ''}
           </tr>`).join('')}
         </tbody>
-      </table></div>` : `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas hoy todavía</div><div class="sub">Las ventas confirmadas del día aparecerán aquí</div></div>`}
+      </table></div>` : `<div class="empty-state"><div class="ico">🧾</div><div class="msg">Sin ventas ${LABEL_PERIODO[resumenPeriodo]}</div><div class="sub">Las ventas confirmadas aparecerán aquí</div></div>`}
+      ${db.ventas.some(v => v.anulada) ? `<p class="sub" style="margin-top:10px;">🚫 Hay ventas anuladas que no se muestran ni se suman en los totales.</p>` : ''}
     </div>`;
+
+  if (esAdmin && document.getElementById('btnLimpiarVentas')) {
+    document.getElementById('btnLimpiarVentas').onclick = () => {
+      if (!confirm('¿Eliminar TODO el historial de ventas? Esto no se puede deshacer y reinicia el número de factura a 1.\n\n(El inventario no se toca, solo el historial de ventas)')) return;
+      wsSend({ t: 'ventas_limpiar' });
+      db.ventas = [];
+      db.numeroFactura = 1;
+      renderResumen();
+      toast('🗑 Historial de ventas eliminado', 'warn');
+    };
+  }
+}
+
+function anularVenta(ventaId) {
+  if (miRol !== 'admin') { toast('⛔ Solo el administrador puede anular ventas', 'err'); return; }
+  const venta = db.ventas.find(v => v.id === ventaId);
+  if (!venta || venta.anulada) return;
+  if (!confirm(`¿Anular la venta #${venta.factura} por ${money(venta.total)}?\n\nEl stock de los productos se devolverá automáticamente.`)) return;
+  venta.anulada = true;
+  venta.items.forEach(vi => {
+    const prod = db.inventario.find(i => i.id === vi.id || i.nombre === vi.nombre);
+    if (!prod) return;
+    const pres = vi.presentacion || 'Unidad';
+    if (pres === 'Caja') prod.cantCaja = (prod.cantCaja||0) + vi.cant;
+    else if (pres === 'Sobre') prod.cantSobre = (prod.cantSobre||0) + vi.cant;
+    else prod.cantUnidad = (prod.cantUnidad||0) + vi.cant;
+    prod.cantidad = (prod.cantUnidad||0) + (prod.cantSobre||0)*(prod.unidadesSobre||0) + (prod.cantCaja||0)*(prod.unidadesCaja||0);
+  });
+  wsSend({ t: 'venta_anular', ventaId });
+  renderInv(); renderVentaSelect(); renderResumen();
+  toast(`🚫 Venta #${venta.factura} anulada — stock devuelto`, 'warn');
 }
 
 // ════════════════════════════════════════════════════════
